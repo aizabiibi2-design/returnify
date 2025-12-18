@@ -1,19 +1,28 @@
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
-import connectDB from "./config/db.js";
+const express = require("express");
+const dotenv = require("dotenv");
+const cors = require("cors"); // 1. CORS ko yahan import karein
+const connectDB = require("./config/db");
 
 dotenv.config();
-
-const app = express();
-app.use(cors());
-app.use(express.json());
-
-// DB connect
 connectDB();
 
+const app = express();
+
+// middleware
+// 2. CORS ko ijazat dein (Frontend port 5173 ke liye)
+app.use(cors({
+    origin: "http://localhost:5173", 
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true
+}));
+
+app.use(express.json());
+
+// routes
+app.use("/api/auth", require("./routes/authRoutes"));
+
 app.get("/", (req, res) => {
-  res.send("Returnify API running");
+  res.send("API running...");
 });
 
 const PORT = process.env.PORT || 5000;

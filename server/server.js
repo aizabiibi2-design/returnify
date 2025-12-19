@@ -2,6 +2,7 @@ const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors"); // 1. CORS ko yahan import karein
 const connectDB = require("./config/db");
+const postRoutes = require('./routes/postRoutes');
 
 dotenv.config();
 connectDB();
@@ -20,6 +21,7 @@ app.use(express.json());
 
 // routes
 app.use("/api/auth", require("./routes/authRoutes"));
+app.use('/api/items', postRoutes);
 
 app.get("/", (req, res) => {
   res.send("API running...");

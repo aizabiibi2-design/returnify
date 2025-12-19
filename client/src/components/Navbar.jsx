@@ -1,9 +1,8 @@
-import React, { useContext } from 'react'; // 1. useContext add kiya
+import React, { useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 
 const Navbar = () => {
-  // 2. Context se user aur logout function mangwaya
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
 
@@ -20,13 +19,12 @@ const Navbar = () => {
       
       <div className="hidden md:flex gap-8 text-[11px] font-bold uppercase tracking-widest text-white">
         <Link to="/" className="hover:text-neon-pink transition">Home</Link>
-        {/* Sirf Login user ko Post Item dikhao */}
+        {/* Sirf Login user ko Post Item dikhao - Route path /post rakha hai */}
         {user && <Link to="/post" className="hover:text-neon-pink transition">Post Item</Link>}
         <Link to="/leaderboard" className="hover:text-neon-pink transition text-bright-cyan">Community</Link>
       </div>
 
       <div className="flex gap-4">
-        {/* 3. Condition: Agar user nahi hai (!user) to Login/Sign Up dikhao */}
         {!user ? (
           <>
             <Link to="/login" className="px-6 py-2 border border-bright-cyan text-bright-cyan rounded-full text-xs font-bold hover:bg-bright-cyan hover:text-royal-blue transition">
@@ -37,7 +35,6 @@ const Navbar = () => {
             </Link>
           </>
         ) : (
-          /* 4. Agar user login hai, to Logout button dikhao */
           <button 
             onClick={handleLogout}
             className="px-6 py-2 border border-red-500 text-red-500 rounded-full text-xs font-bold hover:bg-red-500 hover:text-white transition uppercase tracking-widest"

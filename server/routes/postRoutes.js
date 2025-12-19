@@ -4,39 +4,68 @@ const multer = require('multer');
 const path = require('path');
 const Item = require('../models/Post');
 
-// Multer Setup
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/'); // Ye direct 'server/uploads' ko target karega
+    cb(null, 'uploads/');
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + '-' + file.originalname);
+    const ext = path.extname(file.originalname);
+    cb(null, Date.now() + ext);
   }
 });
 
 const upload = multer({ storage: storage });
 
-// Item Post karne ka Route
+// Naya Leaderboard Route (Isay hamesha specific ID route se upar rakhein)
+router.get('/leaderboard/top', async (req, res) => {
+  try {
+    const leaderboard = await Item.aggregate([
+      { $group: { _id: "$location", count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 5 }
+    ]);
+    res.status(200).json(leaderboard);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.post('/post-item', upload.single('image'), async (req, res) => {
   try {
-    console.log("Body:", req.body); // Terminal mein data dekhne ke liye
-    console.log("File:", req.file); // Terminal mein file dekhne ke liye
-
     const { title, location, description, type } = req.body;
-    
+    const formattedType = type.charAt(0).toUpperCase() + type.slice(1).toLowerCase();
+
     const newItem = new Item({
       title,
       location,
       description,
-      type,
-      image: req.file ? req.file.filename : null // File ka naam DB mein jayega
+      type: formattedType,
+      image: req.file ? req.file.filename : null 
     });
 
     await newItem.save();
     res.status(201).json({ message: "Report Submitted Successfully!", item: newItem });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Server Error: Data save nahi ho saka" });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/all-items', async (req, res) => {
+  try {
+    const items = await Item.find().sort({ date: -1 }); 
+    res.status(200).json(items);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/:id', async (req, res) => {
+  try {
+    const item = await Item.findById(req.params.id);
+    if (!item) return res.status(404).json({ message: "Item not found" });
+    res.status(200).json(item);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

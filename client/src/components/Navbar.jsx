@@ -19,7 +19,7 @@ const Navbar = () => {
       
       <div className="hidden md:flex gap-8 text-[11px] font-bold uppercase tracking-widest text-white">
         <Link to="/" className="hover:text-neon-pink transition">Home</Link>
-        {/* Sirf Login user ko Post Item dikhao - Route path /post rakha hai */}
+        <Link to="/discovery" className="hover:text-neon-pink transition">Discovery</Link>
         {user && <Link to="/post" className="hover:text-neon-pink transition">Post Item</Link>}
         <Link to="/leaderboard" className="hover:text-neon-pink transition text-bright-cyan">Community</Link>
       </div>

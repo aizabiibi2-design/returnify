@@ -1,18 +1,29 @@
 import React, { useState } from 'react';
 
 const PostItem = () => {
+  // 'Lost' aur 'Found' ko Capital rakha hai taake MongoDB Enum se match ho
+  const [type, setType] = useState('Lost'); 
   const [formData, setFormData] = useState({ title: '', location: '', description: '' });
-  const [type, setType] = useState('Lost');
   const [image, setImage] = useState(null);
+
+  const handleInputChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!image) {
+      alert("Please upload an image first! 📸");
+      return;
+    }
+
     const data = new FormData();
     data.append('title', formData.title);
     data.append('location', formData.location);
     data.append('description', formData.description);
-    data.append('type', type);
-    if (image) data.append('image', image);
+    data.append('type', type); // Ab ye 'Lost' ya 'Found' bhejega
+    data.append('image', image);
 
     try {
       const response = await fetch('http://localhost:5000/api/items/post-item', {
@@ -21,81 +32,76 @@ const PostItem = () => {
       });
 
       if (response.ok) {
-        alert("Report Submitted Successfully!");
-        window.location.reload(); // Page refresh taake form reset ho jaye
+        alert(`🎉 Success! Your ${type.toUpperCase()} report has been submitted.`);
+        window.location.reload(); 
+      } else {
+        const errorResult = await response.json();
+        // Agar ab bhi error aaye, to alert mein wajah likhi aayegi
+        alert("❌ Server Error: " + (errorResult.message || "Something went wrong"));
       }
     } catch (err) {
-      console.error("Error:", err);
+      console.error("Fetch Error:", err);
+      alert("📡 Connection Error! Please check if your backend server is running.");
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-      <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-lg border border-gray-200">
-        <h2 className="text-3xl font-extrabold text-gray-800 mb-6 text-center">📢 Report Item</h2>
-        
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Input fields with Black Text */}
-          <div>
-            <label className="block text-gray-700 font-semibold mb-1">Item Name</label>
-            <input 
-              type="text" 
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 text-black focus:ring-2 focus:ring-blue-500 focus:outline-none" 
-              placeholder="e.g. Silver Watch"
-              onChange={(e) => setFormData({...formData, title: e.target.value})} 
-              required 
-            />
-          </div>
+    <div className="min-h-screen p-8 bg-gradient-to-br from-royal-blue via-[#1a1a4b] to-[#2d1b4d] flex items-center justify-center">
+      <div className="bg-white w-full max-w-3xl rounded-[40px] shadow-2xl p-10 relative overflow-hidden mt-10">
+        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-neon-pink to-bright-cyan"></div>
 
-          <div>
-            <label className="block text-gray-700 font-semibold mb-1">Where did you find/lose it?</label>
-            <input 
-              type="text" 
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 text-black focus:ring-2 focus:ring-blue-500 focus:outline-none" 
-              placeholder="e.g. Library Hall"
-              onChange={(e) => setFormData({...formData, location: e.target.value})} 
-              required 
-            />
-          </div>
+        <div className="text-center mb-10">
+          <h2 className="text-4xl font-black text-royal-blue italic uppercase tracking-tighter">Report an Item</h2>
+          <p className="text-gray-400 text-xs font-bold uppercase mt-2 tracking-widest">Help the community by providing accurate details</p>
+        </div>
 
-          <div>
-            <label className="block text-gray-700 font-semibold mb-1">Description</label>
-            <textarea 
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 text-black focus:ring-2 focus:ring-blue-500 focus:outline-none" 
-              rows="3"
-              placeholder="Provide some details..."
-              onChange={(e) => setFormData({...formData, description: e.target.value})} 
-              required 
-            />
-          </div>
-
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <label className="block text-gray-700 font-semibold mb-1">Report Type</label>
-              <select 
-                className="w-full px-4 py-3 rounded-xl border border-gray-300 text-black bg-white"
-                onChange={(e) => setType(e.target.value)}
-              >
-                <option value="Lost">Lost ❌</option>
-                <option value="Found">Found ✅</option>
-              </select>
-            </div>
-            
-            <div className="flex-1">
-              <label className="block text-gray-700 font-semibold mb-1">Upload Photo</label>
-              <input 
-                type="file" 
-                className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                onChange={(e) => setImage(e.target.files[0])} 
-                required 
-              />
-            </div>
-          </div>
-
+        {/* Toggle Buttons with Capitalized Logic */}
+        <div className="flex bg-gray-100 rounded-2xl p-2 mb-10">
           <button 
-            type="submit" 
-            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-3 rounded-xl shadow-lg hover:scale-105 transition-transform duration-200"
+            type="button"
+            onClick={() => setType('Lost')}
+            className={`flex-1 py-4 rounded-xl font-black uppercase text-xs transition-all ${type === 'Lost' ? 'bg-royal-blue text-white shadow-xl scale-105' : 'text-gray-400'}`}
           >
+            I Lost Something
+          </button>
+          <button 
+            type="button"
+            onClick={() => setType('Found')}
+            className={`flex-1 py-4 rounded-xl font-black uppercase text-xs transition-all ${type === 'Found' ? 'bg-neon-pink text-white shadow-xl scale-105' : 'text-gray-400'}`}
+          >
+            I Found Something
+          </button>
+        </div>
+
+        <form className="space-y-8" onSubmit={handleSubmit}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div>
+              <label className="block text-[10px] font-black text-royal-blue uppercase mb-2 ml-1 tracking-widest italic text-black">Item Name</label>
+              <input name="title" type="text" placeholder="e.g. Silver Ring" className="w-full p-4 bg-gray-50 rounded-2xl border-2 border-gray-100 text-black font-bold outline-none focus:border-neon-pink transition" required onChange={handleInputChange} />
+            </div>
+            <div>
+              <label className="block text-[10px] font-black text-royal-blue uppercase mb-2 ml-1 tracking-widest italic text-black">Location</label>
+              <input name="location" type="text" placeholder="e.g. Library" className="w-full p-4 bg-gray-50 rounded-2xl border-2 border-gray-100 text-black font-bold outline-none focus:border-bright-cyan transition" required onChange={handleInputChange} />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-black text-royal-blue uppercase mb-2 ml-1 tracking-widest italic text-black">Detailed Description</label>
+            <textarea name="description" rows="4" placeholder="Describe it..." className="w-full p-4 bg-gray-50 rounded-2xl border-2 border-gray-100 text-black font-bold outline-none focus:border-neon-pink transition" required onChange={handleInputChange}></textarea>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-black text-royal-blue uppercase mb-2 ml-1 tracking-widest italic text-black">Upload Photo</label>
+            <label className="border-4 border-dashed border-gray-100 rounded-[30px] p-10 text-center cursor-pointer bg-gray-50/50 flex flex-col items-center hover:border-bright-cyan transition-all">
+              <span className="text-3xl mb-2">📸</span>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                {image ? image.name : "Click to upload image"}
+              </p>
+              <input type="file" className="hidden" accept="image/*" onChange={(e) => setImage(e.target.files[0])} />
+            </label>
+          </div>
+
+          <button type="submit" className={`w-full text-white py-5 rounded-2xl font-black uppercase text-sm tracking-[0.5em] shadow-2xl transition-all ${type === 'Lost' ? 'bg-royal-blue' : 'bg-neon-pink'}`}>
             Submit Report
           </button>
         </form>

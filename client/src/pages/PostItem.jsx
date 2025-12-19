@@ -1,7 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react'; // useContext add kiya
+import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext'; // AuthContext ko import kiya
 
 const PostItem = () => {
-  // 'Lost' aur 'Found' ko Capital rakha hai taake MongoDB Enum se match ho
+  // 1. Auth context se token aur login check nikala
+  const { user, token } = useContext(AuthContext); 
+  const navigate = useNavigate();
+
   const [type, setType] = useState('Lost'); 
   const [formData, setFormData] = useState({ title: '', location: '', description: '' });
   const [image, setImage] = useState(null);
@@ -13,6 +18,13 @@ const PostItem = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // Check if user is logged in
+    if (!token) {
+      alert("Please login first to post an item! 🔒");
+      navigate('/login');
+      return;
+    }
+
     if (!image) {
       alert("Please upload an image first! 📸");
       return;
@@ -22,22 +34,26 @@ const PostItem = () => {
     data.append('title', formData.title);
     data.append('location', formData.location);
     data.append('description', formData.description);
-    data.append('type', type); // Ab ye 'Lost' ya 'Found' bhejega
+    data.append('type', type); 
     data.append('image', image);
 
     try {
       const response = await fetch('http://localhost:5000/api/items/post-item', {
         method: 'POST',
+        headers: {
+          // 2. Authorization header mein token bheja security ke liye
+          'Authorization': `Bearer ${token}` 
+        },
         body: data,
       });
 
       if (response.ok) {
         alert(`🎉 Success! Your ${type.toUpperCase()} report has been submitted.`);
-        window.location.reload(); 
+        // Reload ke bajaye discovery par le jana behtar user experience hai
+        navigate('/discovery'); 
       } else {
         const errorResult = await response.json();
-        // Agar ab bhi error aaye, to alert mein wajah likhi aayegi
-        alert("❌ Server Error: " + (errorResult.message || "Something went wrong"));
+        alert("❌ Error: " + (errorResult.message || "Something went wrong"));
       }
     } catch (err) {
       console.error("Fetch Error:", err);
@@ -45,6 +61,7 @@ const PostItem = () => {
     }
   };
 
+  // --- AAPKA BEAUTIFUL UI START ---
   return (
     <div className="min-h-screen p-8 bg-gradient-to-br from-royal-blue via-[#1a1a4b] to-[#2d1b4d] flex items-center justify-center">
       <div className="bg-white w-full max-w-3xl rounded-[40px] shadow-2xl p-10 relative overflow-hidden mt-10">
@@ -55,7 +72,7 @@ const PostItem = () => {
           <p className="text-gray-400 text-xs font-bold uppercase mt-2 tracking-widest">Help the community by providing accurate details</p>
         </div>
 
-        {/* Toggle Buttons with Capitalized Logic */}
+        {/* Toggle Buttons */}
         <div className="flex bg-gray-100 rounded-2xl p-2 mb-10">
           <button 
             type="button"

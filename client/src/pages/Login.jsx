@@ -16,12 +16,14 @@ const Login = () => {
     setError('');
     try {
       const response = await axios.post('http://localhost:5000/api/auth/login', { email, password });
+      
       if (response.data.token) {
-        // Sirf localStorage nahi, balkay context wala login call karenge
-        login(response.data.token); 
+        // ZAROORI: Token ke sath user data (response.data.user) bhi bhejein
+        login(response.data.token, response.data.user); 
         navigate('/'); 
       }
     } catch (err) {
+      // Backend se aane wala error message dikhayein
       setError(err.response?.data?.message || "Invalid Credentials. Access Denied.");
     }
   };

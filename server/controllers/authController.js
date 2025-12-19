@@ -4,10 +4,8 @@ const jwt = require("jsonwebtoken");
 
 const registerUser = async (req, res) => {
   try {
-    // 1. Frontend se data nikalna
     const { name, email, phone, city, role, password } = req.body;
 
-    // 2. Check karna ke sab kuch fill hai ya nahi
     if (!name || !email || !phone || !city || !password) {
       return res.status(400).json({ message: "Sari fields fill karna lazmi hain" });
     }
@@ -17,17 +15,16 @@ const registerUser = async (req, res) => {
       return res.status(400).json({ message: "Ye email pehle se register hai" });
     }
 
-    // 3. Password ko secure (hash) karna
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 4. Database mein naya user save karna
     const user = await User.create({
       name,
       email,
       phone,
       city,
-      role, // Ab role bhi save hoga
+      role,
       password: hashedPassword,
+      points: 0 // Proposal ke mutabiq: Har naye user ke 0 points honge
     });
 
     res.status(201).json({ message: "User registered successfully" });
@@ -50,7 +47,12 @@ const loginUser = async (req, res) => {
     res.status(200).json({ 
       message: "Login successful", 
       token, 
-      user: { name: user.name, role: user.role } 
+      user: { 
+        id: user._id, 
+        name: user.name, 
+        role: user.role,
+        points: user.points // Frontend ko points bhejna zaroori hai
+      } 
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

@@ -1,0 +1,12 @@
+{
+  "name": "returnify-project",
+  "version": "1.0.0",
+  "scripts": {
+    "server": "cd server && npm run dev",
+    "client": "cd client && npm run dev",
+    "both": "concurrently \"npm run server\" \"npm run client\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

@@ -7,7 +7,11 @@ const Discovery = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('All');
+  const [filterCity, setFilterCity] = useState('All'); // Naya city filter
   const navigate = useNavigate();
+
+  // Cities list as per your documentation
+  const pkCities = ["Rawalpindi", "Islamabad", "Lahore", "Karachi", "Peshawar"];
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -18,7 +22,7 @@ const Discovery = () => {
         setFilteredItems(data);
         setLoading(false);
       } catch (err) {
-        console.error(err);
+        console.error("Error fetching items:", err);
         setLoading(false);
       }
     };
@@ -27,7 +31,14 @@ const Discovery = () => {
 
   useEffect(() => {
     let result = items;
+    
+    // Type Filter (Lost/Found)
     if (filterType !== 'All') result = result.filter(item => item.type === filterType);
+    
+    // City Filter (Documentation Requirement)
+    if (filterCity !== 'All') result = result.filter(item => item.city === filterCity);
+    
+    // Search Term
     if (searchTerm) {
       result = result.filter(item => 
         item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -35,105 +46,87 @@ const Discovery = () => {
       );
     }
     setFilteredItems(result);
-  }, [searchTerm, filterType, items]);
+  }, [searchTerm, filterType, filterCity, items]);
 
   return (
     <div className="min-h-screen bg-[#0f0c29] p-8">
       {/* Header Section */}
-      <div className="text-center mb-12 mt-10">
-        <h1 className="text-5xl font-black text-white italic uppercase tracking-tighter">
-          Recent <span className="text-neon-pink">Reports</span>
+      <div className="max-w-7xl mx-auto mb-12 text-center">
+        <h1 className="text-5xl font-black text-white uppercase tracking-tighter mb-4 italic">
+          Discovery <span className="text-neon-pink">Portal</span>
         </h1>
-        <p className="text-gray-400 text-[10px] font-bold uppercase mt-2 tracking-[0.3em]">Global Network Discovery</p>
+        <p className="text-gray-400 uppercase tracking-[0.3em] text-xs">Search through lost and found reports</p>
       </div>
 
-      {/* Search & Filter Bar */}
-      <div className="max-w-7xl mx-auto mb-12 flex flex-col md:flex-row gap-6 items-center">
-        <div className="relative flex-1 w-full">
-          <input 
-            type="text" 
-            placeholder="Search by name or location..." 
-            className="w-full bg-white/5 border-2 border-white/10 rounded-2xl py-4 px-6 text-white outline-none focus:border-bright-cyan transition shadow-2xl pl-12"
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl">🔍</span>
-        </div>
+      {/* Filters Section */}
+      <div className="max-w-7xl mx-auto mb-12 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <input 
+          type="text" 
+          placeholder="SEARCH ITEMS..." 
+          className="bg-white/5 border-2 border-white/10 p-4 rounded-2xl text-white font-bold placeholder:text-gray-600 focus:border-bright-cyan outline-none transition-all uppercase text-sm"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        
+        <select 
+          className="bg-white/5 border-2 border-white/10 p-4 rounded-2xl text-white font-bold focus:border-neon-pink outline-none transition-all uppercase text-sm cursor-pointer"
+          value={filterType}
+          onChange={(e) => setFilterType(e.target.value)}
+        >
+          <option value="All">All Types</option>
+          <option value="Lost">Lost Items</option>
+          <option value="Found">Found Items</option>
+        </select>
 
-        <div className="flex bg-white/5 p-2 rounded-2xl border-2 border-white/10 shadow-2xl backdrop-blur-md">
-          {['All', 'Lost', 'Found'].map((type) => (
-            <button
-              key={type}
-              onClick={() => setFilterType(type)}
-              className={`px-8 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                filterType === type ? 'bg-bright-cyan text-royal-blue shadow-lg scale-105' : 'text-white hover:text-neon-pink'
-              }`}
-            >
-              {type}
-            </button>
-          ))}
+        <select 
+          className="bg-white/5 border-2 border-white/10 p-4 rounded-2xl text-white font-bold focus:border-bright-cyan outline-none transition-all uppercase text-sm cursor-pointer"
+          value={filterCity}
+          onChange={(e) => setFilterCity(e.target.value)}
+        >
+          <option value="All">All Cities</option>
+          {pkCities.map(city => <option key={city} value={city}>{city}</option>)}
+        </select>
+
+        <div className="bg-bright-cyan/10 border-2 border-bright-cyan/20 p-4 rounded-2xl text-bright-cyan font-black text-center uppercase text-xs flex items-center justify-center">
+          {filteredItems.length} Reports Found
         </div>
       </div>
 
-      {/* Grid Section */}
+      {/* Items Grid */}
       {loading ? (
-        <div className="flex flex-col justify-center items-center h-64">
-           <div className="w-12 h-12 border-4 border-neon-pink border-t-transparent rounded-full animate-spin"></div>
-           <p className="text-white font-black uppercase text-[10px] mt-4 tracking-widest">Accessing Database...</p>
-        </div>
+        <div className="text-center py-20 text-white font-black animate-pulse uppercase tracking-widest">Loading Reports...</div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 max-w-7xl mx-auto">
-          {filteredItems.length > 0 ? (
-            filteredItems.map((item) => (
-              <div key={item._id} className="group bg-white/5 backdrop-blur-md border border-white/10 rounded-[40px] overflow-hidden hover:border-bright-cyan transition-all duration-500 shadow-2xl flex flex-col h-full">
-                
-                {/* Image Section with Badge */}
-                <div className="h-64 overflow-hidden relative">
-                  <img 
-                    src={`http://localhost:5000/uploads/${item.image}`} 
-                    alt={item.title} 
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                  />
-                  {/* Neon Type Badge */}
-                  <div className={`absolute top-6 right-6 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-2xl border-2 ${
-                    item.type === 'Lost' 
-                    ? 'bg-royal-blue/80 border-bright-cyan text-white backdrop-blur-md' 
-                    : 'bg-neon-pink/80 border-white text-white backdrop-blur-md'
-                  }`}>
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {filteredItems.map((item) => (
+            <div key={item._id} className="group relative bg-[#1a1a4b] border-2 border-white/5 rounded-[40px] overflow-hidden hover:border-neon-pink transition-all duration-500">
+              <div className="p-8">
+                <div className="flex justify-between items-start mb-6">
+                  <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${item.type === 'Lost' ? 'bg-red-500/20 text-red-500' : 'bg-green-500/20 text-green-500'}`}>
                     {item.type}
-                  </div>
+                  </span>
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest italic">{item.city}</span>
                 </div>
-
-                {/* Content Section */}
-                <div className="p-8 flex-grow flex flex-col">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="w-2 h-2 bg-bright-cyan rounded-full animate-pulse"></span>
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest italic">{item.location}</span>
-                  </div>
-                  
-                  <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter group-hover:text-bright-cyan transition-colors">
-                    {item.title}
-                  </h3>
-                  
-                  <p className="text-gray-400 text-sm mt-4 line-clamp-2 leading-relaxed flex-grow">
-                    {item.description}
-                  </p>
-                  
-                  <div className="mt-8 pt-6 border-t border-white/5">
-                    <button 
-                      onClick={() => navigate(`/item/${item._id}`)}
-                      className="w-full py-4 bg-white/5 border-2 border-white/10 text-white rounded-2xl font-black uppercase text-[10px] tracking-[0.3em] hover:bg-white hover:text-royal-blue hover:-translate-y-1 transition-all active:scale-95"
-                    >
-                      View Details
-                    </button>
-                  </div>
+                
+                <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter group-hover:text-bright-cyan transition-colors mb-2">
+                  {item.title}
+                </h3>
+                <p className="text-gray-500 text-[10px] font-bold uppercase mb-4">Posted By: {item.user?.name || 'Anonymous'}</p>
+                
+                <p className="text-gray-400 text-sm line-clamp-2 leading-relaxed h-12">
+                  {item.description}
+                </p>
+                
+                <div className="mt-8 pt-6 border-t border-white/5">
+                  <button 
+                    onClick={() => navigate(`/item/${item._id}`)}
+                    className="w-full py-4 bg-white/5 border-2 border-white/10 text-white rounded-2xl font-black uppercase text-[10px] tracking-[0.3em] hover:bg-white hover:text-royal-blue hover:-translate-y-1 transition-all active:scale-95"
+                  >
+                    View Details
+                  </button>
                 </div>
               </div>
-            ))
-          ) : (
-            <div className="col-span-full text-center py-20 bg-white/5 rounded-[40px] border-2 border-dashed border-white/10">
-               <p className="text-gray-500 font-black uppercase tracking-[0.4em]">No matching reports found</p>
             </div>
-          )}
+          ))}
         </div>
       )}
     </div>

@@ -13,6 +13,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import AIIntelligence from './pages/AIIntelligence'; 
 
+
 function App() {
   return (
     <Router>

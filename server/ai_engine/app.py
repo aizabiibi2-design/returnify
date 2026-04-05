@@ -10,43 +10,66 @@ CORS(app)
 def match_items():
     try:
         data = request.json
-        lost_description = data.get('lost_desc', '')
+        
+        # 1. Lost Item ka sara data ek string mein combine karna (Accuracy ke liye)
+        lost_title = data.get('item_name', '')
+        lost_loc = data.get('location', '')
+        lost_desc = data.get('lost_desc', '')
+        
+        lost_combined_text = f"{lost_title} {lost_loc} {lost_desc}".lower()
+        
         found_items = data.get('found_items', []) 
 
         if not found_items:
-            return jsonify({"matches": []})
+            return jsonify({"success": True, "matches": []})
 
+        # 2. Database ke har Found Item ka data combine karna
+        found_texts = []
+        for item in found_items:
+            f_title = item.get('title', '')
+            f_loc = item.get('location', '')
+            f_desc = item.get('description', '')
+            combined = f"{f_title} {f_loc} {f_desc}".lower()
+            found_texts.append(combined)
+
+        # 3. TF-IDF Vectorization shuru karna
+        all_texts = [lost_combined_text] + found_texts
         
-        all_descriptions = [lost_description] + [item['description'] for item in found_items]
+        vectorizer = TfidfVectorizer(stop_words='english') # Common words like 'the', 'is' ignore honge
+        tfidf_matrix = vectorizer.fit_transform(all_texts)
 
-       
-        vectorizer = TfidfVectorizer()
-        tfidf_matrix = vectorizer.fit_transform(all_descriptions)
-
-        
+        # 4. Cosine Similarity calculate karna
+        # (Compare index 0 with all other indexes)
         cosine_sim = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:])
-        
         scores = cosine_sim[0]
 
-        
+        # 5. Matches filter karna
         matches = []
         for i, score in enumerate(scores):
-            
-            if score > 0.2: 
+            # Documentation Requirement: Match percentage display karna
+            if score > 0.15: 
                 matches.append({
-                    "item_id": found_items[i]['_id'],
+                    "item_id": found_items[i].get('_id', ''),
                     "score": round(float(score), 2),
-                    "title": found_items[i].get('title', 'Found Item')
+                    "title": found_items[i].get('title', 'Unknown Item'),
+                    "location": found_items[i].get('location', 'N/A'),
+                    "city": found_items[i].get('city', 'N/A')
                 })
 
-        
+        # Score ke mutabiq sort karna (Highest match pehle)
         matches = sorted(matches, key=lambda x: x['score'], reverse=True)
 
-        return jsonify({"success": True, "matches": matches})
+        return jsonify({
+            "success": True, 
+            "total_found": len(matches),
+            "matches": matches
+        })
 
     except Exception as e:
+        print(f"AI ERROR: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == '__main__':
-    print("AI Matcher Engine is running on port 5001...")
+    print("🚀 Returnify AI Engine is active on Port 5001...")
     app.run(port=5001, debug=True)
+

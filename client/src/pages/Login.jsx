@@ -18,8 +18,12 @@ const Login = () => {
       const response = await axios.post('http://localhost:5000/api/auth/login', { email, password });
       
       if (response.data.token) {
+        // Step 1: Context aur LocalStorage update karein
         login(response.data.token, response.data.user); 
-        navigate('/'); 
+        
+        // Step 2: Page ko hard refresh karke home par le jayein
+        // Is se Navbar mein Admin Panel button foran show ho jayega
+        window.location.href = '/'; 
       }
     } catch (err) {
       setError(err.response?.data?.message || "Invalid Credentials. Access Denied.");
@@ -63,7 +67,6 @@ const Login = () => {
                 <span className="w-1.5 h-1.5 bg-neon-pink rounded-full mr-2"></span> PASSWORD
               </label>
               
-              {/* Added Forgot Password Link for Diagram Consistency */}
               <Link to="/forgot-password" size="sm" className="text-[9px] font-black text-neon-pink uppercase hover:underline">
                 Forgot?
               </Link>
@@ -74,7 +77,7 @@ const Login = () => {
               value={password} 
               onChange={(e) => setPassword(e.target.value)} 
               placeholder="••••••••" 
-              className="w-full p-4 bg-gray-50 rounded-xl border-2 border-gray-100 focus:border-neon-pink outline-none text-royal-blue text-xs font-bold transition" 
+              className="w-full p-4 bg-gray-0 rounded-xl border-2 border-gray-100 focus:border-neon-pink outline-none text-royal-blue text-xs font-bold transition" 
             />
           </div>
 

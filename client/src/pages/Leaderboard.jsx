@@ -8,9 +8,13 @@ const Leaderboard = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/items/leaderboard/top');
+        // UPDATE: /api/items ki jagah ab /api/actions use hoga
+        const response = await fetch('http://localhost:5000/api/actions/leaderboard/top');
         const data = await response.json();
-        setStats(data);
+        
+        if (Array.isArray(data)) {
+          setStats(data);
+        }
         setLoading(false);
       } catch (err) {
         console.error("Leaderboard fetch error:", err);
@@ -20,7 +24,6 @@ const Leaderboard = () => {
     fetchStats();
   }, []);
 
-  
   const getBadge = (points, index) => {
     if (index === 0 && points > 0) return { name: 'Gold Guardian', color: 'text-yellow-400', icon: <Trophy className="w-5 h-5" /> };
     if (index === 1 && points > 0) return { name: 'Silver Savior', color: 'text-gray-300', icon: <Medal className="w-5 h-5" /> };
@@ -31,7 +34,6 @@ const Leaderboard = () => {
 
   return (
     <div className="min-h-screen bg-[#0f0c29] p-8 flex flex-col items-center">
-      {/* Header Section */}
       <div className="text-center mb-16 mt-10">
         <h1 className="text-6xl font-black text-white italic uppercase tracking-tighter">
           Community <span className="text-bright-cyan underline decoration-neon-pink">Heroes</span>
@@ -40,7 +42,6 @@ const Leaderboard = () => {
       </div>
 
       <div className="max-w-4xl w-full bg-[#1a1a4b]/50 border-2 border-white/5 rounded-[40px] p-10 shadow-2xl backdrop-blur-xl relative overflow-hidden">
-        {/* Decorative Background Element */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-neon-pink/5 blur-[100px] -z-10"></div>
         
         <div className="grid gap-6 relative z-10">
@@ -52,7 +53,6 @@ const Leaderboard = () => {
               return (
                 <div key={index} className="flex justify-between items-center bg-white/5 p-8 rounded-[30px] border-2 border-white/5 hover:border-neon-pink transition-all duration-500 group">
                   <div className="flex items-center gap-8">
-                    {/* Rank Number with Special Styling for Top 3 */}
                     <div className={`text-4xl font-black italic ${index === 0 ? 'text-yellow-400 scale-125' : index === 1 ? 'text-gray-300 scale-110' : index === 2 ? 'text-orange-400' : 'text-white/20'}`}>
                       {index + 1}
                     </div>
@@ -62,7 +62,6 @@ const Leaderboard = () => {
                         <span className="text-2xl font-black text-white uppercase italic tracking-tighter group-hover:text-bright-cyan transition-colors">
                           {stat.name}
                         </span>
-                        {/* Badge Display from Documentation Requirements */}
                         {badge && (
                           <div className={`flex items-center gap-1 px-3 py-1 rounded-full bg-white/5 border border-white/10 ${badge.color} text-[10px] font-black uppercase tracking-widest`}>
                             {badge.icon}

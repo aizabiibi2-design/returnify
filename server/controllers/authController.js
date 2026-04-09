@@ -3,23 +3,21 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const nodemailer = require('nodemailer');
 
-// 1. Register User (With Advanced Validation)
+// 1. Register User (With Dash-friendly CNIC)
 const registerUser = async (req, res) => {
   try {
     const { name, email, phone, cnic, city, role, password } = req.body;
 
-    // Supervisor Check: Basic field validation
     if (!name || !email || !phone || !cnic || !city || !password) {
       return res.status(400).json({ message: "All fields are required! 📝" });
     }
 
-    // Advanced Check: Password length (Security best practice)
     if (password.length < 6) {
       return res.status(400).json({ message: "Password must be at least 6 characters long! 🔐" });
     }
 
-    // Advanced Check: CNIC format (Optional but impressive)
-    if (cnic.length !== 13) {
+    // UPDATED: Ab dashes walay CNIC (15 chars) bhi accept honge
+    if (cnic.length !== 13 && cnic.length !== 15) {
       return res.status(400).json({ message: "Please enter a valid 13-digit CNIC number! 🪪" });
     }
 
@@ -30,10 +28,9 @@ const registerUser = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Initializing points to 0 for the Reward System
     const user = await User.create({
       name, 
-      email, 
+      email: email.toLowerCase(), // Email case-sensitivity fix
       phone, 
       cnic, 
       city, 
@@ -44,84 +41,72 @@ const registerUser = async (req, res) => {
 
     res.status(201).json({ 
       success: true,
-      message: "User registered successfully! Welcome to Returnify. 🎉" 
+      message: "User registered successfully! 🎉" 
     });
   } catch (error) {
-    console.error("Registration Error:", error);
-    res.status(500).json({ message: "Internal Server Error. Please try again later." });
+    res.status(500).json({ message: "Internal Server Error." });
   }
 };
 
-// 2. Login User (With Token)
+// 2. Login User (Clean & Fast)
 const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
     
     if (!email || !password) {
-      return res.status(400).json({ message: "Please provide both email and password." });
+      return res.status(400).json({ message: "Please provide email and password." });
     }
 
-    const user = await User.findOne({ email });
-    if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res.status(400).json({ message: "Invalid email or password! ❌" });
+    // Email ko hamesha lowercase karke dhoondein
+    const user = await User.findOne({ email: email.toLowerCase() });
+    
+    if (!user) {
+      return res.status(400).json({ message: "Email not found! ❌" });
     }
 
-    // Generating JWT Token
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1d" });
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Invalid password! ❌" });
+    }
+
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "1d" });
 
     res.status(200).json({ 
       success: true,
-      message: "Login successful! 🚀", 
       token, 
-      user: { 
-        id: user._id, 
-        name: user.name, 
-        points: user.points,
-        role: user.role 
-      } 
+      user: { id: user._id, name: user.name, points: user.points, role: user.role } 
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// 3. Forgot Password (Email Logic)
+// 3. Forgot Password (Nodemailer)
 const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
-    const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: "No account found with this email! 🔍" });
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) return res.status(404).json({ message: "No account found! 🔍" });
 
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
         user: 'aizabibi18@gmail.com',
-        pass: 'afgt ydwa irxs nqsa' // Your Secure App Password
+        pass: 'afgt ydwa irxs nqsa' // Ensure App Password is correct
       }
     });
 
     const mailOptions = {
       from: '"Returnify Support" <aizabibi18@gmail.com>',
       to: email,
-      subject: 'Password Reset Request - Returnify',
-      html: `
-        <div style="font-family: Arial, sans-serif; border: 1px solid #ddd; padding: 20px; border-radius: 10px;">
-          <h2 style="color: #1a1a4b;">Password Reset</h2>
-          <p>Hi ${user.name},</p>
-          <p>We received a request to reset your password. Click the button below to proceed:</p>
-          <a href="http://localhost:5173/reset-password/${user._id}" 
-             style="background: #ff007a; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
-             Reset My Password
-          </a>
-          <p style="margin-top: 20px; font-size: 12px; color: #777;">If you didn't request this, you can safely ignore this email.</p>
-        </div>
-      `
+      subject: 'Password Reset Request',
+      html: `<h2>Reset Password</h2><p>Click <a href="http://localhost:5173/reset-password/${user._id}">here</a> to reset.</p>`
     };
 
     await transporter.sendMail(mailOptions);
-    res.status(200).json({ message: "Reset link sent to your email! 📧" });
+    res.status(200).json({ message: "Reset link sent! 📧" });
   } catch (error) {
-    res.status(500).json({ message: "Failed to send email. Please check your connection." });
+    res.status(500).json({ message: "Failed to send email." });
   }
 };
 
@@ -130,17 +115,9 @@ const resetPassword = async (req, res) => {
   try {
     const { id } = req.params;
     const { password } = req.body;
-
-    if (password.length < 6) {
-      return res.status(400).json({ message: "New password must be at least 6 characters!" });
-    }
-
     const hashedPassword = await bcrypt.hash(password, 10);
-    const updatedUser = await User.findByIdAndUpdate(id, { password: hashedPassword });
-    
-    if (!updatedUser) return res.status(404).json({ message: "User not found" });
-
-    res.status(200).json({ message: "Success! Your password has been updated. 🛡️" });
+    await User.findByIdAndUpdate(id, { password: hashedPassword });
+    res.status(200).json({ message: "Updated! 🛡️" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

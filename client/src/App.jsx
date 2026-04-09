@@ -12,7 +12,7 @@ import Leaderboard from './pages/Leaderboard';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import AIIntelligence from './pages/AIIntelligence'; 
-
+import Admin from './pages/Admin'; // <--- Naya Import
 
 function App() {
   return (
@@ -31,6 +31,9 @@ function App() {
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password/:id" element={<ResetPassword />} />
             <Route path="/ai-intelligence" element={<AIIntelligence />} />
+            
+            {/* Admin Dashboard Route */}
+            <Route path="/admin" element={<Admin />} /> 
             
           </Routes>
         </main>

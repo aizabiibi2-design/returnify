@@ -9,6 +9,7 @@ const connectDB = require("./config/db");
 const postRoutes = require("./routes/postRoutes");
 const itemRoutes = require("./routes/itemRoutes"); 
 const authRoutes = require("./routes/authRoutes"); 
+const messageRoutes = require('./routes/messageRoutes')
 
 dotenv.config();
 connectDB();
@@ -30,6 +31,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use("/api/auth", authRoutes);
 app.use("/api/items", postRoutes); 
 app.use("/api/actions", itemRoutes); 
+app.use('/api/messages', messageRoutes);
 
 app.get("/", (req, res) => {
   res.send("API running...");

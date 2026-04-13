@@ -1,12 +1,103 @@
 @import "tailwindcss";
 
 @theme {
-  --color-royal-blue: #1a1a4b;  /* Deep Blue like the screenshot */
-  --color-neon-pink: #ff007a;   /* Vibrant Pink */
-  --color-bright-cyan: #00d4ff; /* Light Cyan */
-  --color-bg-gradient: #0f0c29; /* Darker Blue for depth */
+  --color-royal-blue: #1a1a4b;
+  --color-neon-pink: #ff007a;
+  --color-bright-cyan: #00d4ff;
+  --color-bg-gradient: #0f0c29;
 }
 
 body {
   @apply bg-royal-blue text-white font-sans;
+}
+
+/* --- LEAFLET & GEOSEARCH MASTER FIX --- */
+
+/* 1. Search Bar Container */
+.leaflet-control-geosearch {
+    z-index: 1001 !important; /* Map controls se upar */
+    margin-top: 10px !important;
+}
+
+.leaflet-control-geosearch form {
+    background-color: white !important;
+    border-radius: 12px !important;
+    border: 2px solid #1a1a4b !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
+}
+
+.leaflet-control-geosearch form input {
+    color: #1a1a4b !important;
+    background-color: transparent !important;
+    font-weight: 700 !important;
+    padding: 12px !important;
+    font-size: 14px !important;
+    outline: none !important;
+}
+
+/* 2. Search Results - ISKO FIX KIYA HAI */
+.leaflet-control-geosearch .results.active {
+    display: block !important;
+    background-color: white !important;
+    color: #1a1a4b !important;
+    max-height: 280px !important; 
+    overflow-y: auto !important;
+    border-radius: 0 0 15px 15px !important;
+    z-index: 99999 !important; /* Pura map aur form ke upar */
+    box-shadow: 0 15px 35px rgba(0,0,0,0.3) !important;
+    margin-top: 2px !important;
+    width: 100% !important;
+    border: 2px solid #1a1a4b !important;
+    border-top: none !important;
+}
+
+.leaflet-control-geosearch .results > * {
+    padding: 15px !important;
+    border-bottom: 1px solid #f0f0f0 !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+}
+
+.leaflet-control-geosearch .results > *:hover {
+    background-color: #f8f8f8 !important;
+    color: #ff007a !important;
+}
+
+/* 3. POPUP KILLER (No more "ggvgggg" boxes) */
+.leaflet-popup, 
+.leaflet-popup-pane, 
+.leaflet-popup-content-wrapper, 
+.leaflet-popup-tip-container {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+/* 4. Glass Icon styling */
+.leaflet-control-geosearch a.leaflet-bar-part {
+    background-color: white !important;
+    color: #1a1a4b !important;
+    border-radius: 10px !important;
+}
+
+/* Scrollbar Fix */
+.leaflet-control-geosearch .results::-webkit-scrollbar {
+    width: 8px;
+}
+
+.leaflet-control-geosearch .results::-webkit-scrollbar-thumb {
+    background: #1a1a4b;
+    border-radius: 10px;
+}
+
+/* 5. Map Container Overflows Fix */
+.leaflet-container {
+    z-index: 1 !important;
+    /* Is se dropdown map ke boundaries se bahar nikal sakega */
+}
+
+/* Latitude/Longitude Display Styling */
+.font-mono {
+    letter-spacing: 0.5px;
 }

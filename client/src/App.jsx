@@ -12,7 +12,8 @@ import Leaderboard from './pages/Leaderboard';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import AIIntelligence from './pages/AIIntelligence'; 
-import Admin from './pages/Admin'; // <--- Naya Import
+import Admin from './pages/Admin'; 
+import Chat from './pages/Chat'; // <--- Chat Page Import
 
 function App() {
   return (
@@ -34,6 +35,9 @@ function App() {
             
             {/* Admin Dashboard Route */}
             <Route path="/admin" element={<Admin />} /> 
+
+            {/* Chat Route - Isme receiverId dynamic rakhi hai */}
+            <Route path="/chat/:receiverId" element={<Chat />} /> 
             
           </Routes>
         </main>

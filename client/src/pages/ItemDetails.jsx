@@ -15,7 +15,7 @@ const ItemDetails = () => {
         setItem(data);
         setLoading(false);
       } catch (err) {
-        console.error(err);
+        console.error("Error fetching item:", err);
         setLoading(false);
       }
     };
@@ -63,7 +63,7 @@ const ItemDetails = () => {
           </h1>
           
           <div className="flex items-center text-bright-cyan font-black mb-8 uppercase tracking-[0.2em] text-[10px]">
-            <span className="mr-3 text-xl">📍</span> {item.location}
+            <span className="mr-3 text-xl">📍</span> {item.location}, {item.city}
           </div>
           
           {/* Description Box */}
@@ -86,13 +86,24 @@ const ItemDetails = () => {
 
           {/* Action Buttons */}
           <div className="grid grid-cols-1 gap-4">
+            
+            {/* BUTTON 1: DIRECT CHAT */}
+            <button 
+              onClick={() => navigate(`/chat/${item.user?._id}`)}
+              className="w-full py-5 bg-neon-pink text-white rounded-2xl font-black uppercase text-xs tracking-[0.3em] text-center shadow-lg hover:bg-[#e6006e] transition-all active:scale-95 flex items-center justify-center gap-2"
+            >
+              Message Seller 💬
+            </button>
+
+            {/* BUTTON 2: EMAIL CONTACT */}
             <a 
               href={`mailto:${item.user?.email}`}
-              className="w-full py-5 bg-bright-cyan text-royal-blue rounded-2xl font-black uppercase text-xs tracking-[0.3em] text-center shadow-lg hover:bg-white transition-all active:scale-95"
+              className="w-full py-5 bg-bright-cyan text-royal-blue rounded-2xl font-black uppercase text-xs tracking-[0.3em] text-center shadow-lg hover:bg-white transition-all active:scale-95 block"
             >
-              Contact Agent ✉️
+              Contact via Email ✉️
             </a>
 
+            {/* BUTTON 3: BACK */}
             <button 
               onClick={() => navigate('/discovery')}
               className="w-full py-5 bg-white/5 border-2 border-white/10 text-white rounded-2xl font-black uppercase text-xs tracking-[0.3em] hover:bg-white/10 transition-all"

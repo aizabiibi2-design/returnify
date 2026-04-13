@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext'; // Token ke liye context
 
 const Discovery = () => {
   const [items, setItems] = useState([]);
@@ -8,6 +9,13 @@ const Discovery = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('All');
   const [filterCity, setFilterCity] = useState('All');
+  
+  // Messaging States
+  const [showChat, setShowChat] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [messageText, setMessageText] = useState('');
+
+  const { token, user } = useContext(AuthContext); 
   const navigate = useNavigate();
 
   const pkCities = ["Rawalpindi", "Islamabad", "Lahore", "Karachi", "Peshawar"];
@@ -15,10 +23,8 @@ const Discovery = () => {
   useEffect(() => {
     const fetchItems = async () => {
       try {
-        // FIXED URL: server.js ke mutabiq /api/items/all-items hona chahiye
         const response = await fetch('http://localhost:5000/api/items/all-items');
         const data = await response.json();
-        
         if (Array.isArray(data)) {
           setItems(data);
           setFilteredItems(data);
@@ -45,8 +51,37 @@ const Discovery = () => {
     setFilteredItems(result);
   }, [searchTerm, filterType, filterCity, items]);
 
+  // Handle Send Message
+  const handleSendMessage = async () => {
+    if (!messageText.trim()) return;
+    if (!token) { alert("Please login to send a message!"); return; }
+
+    try {
+      const response = await fetch('http://localhost:5000/api/messages/send', {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({
+          receiver: selectedItem.user._id, // Owner ki ID
+          itemId: selectedItem._id,
+          text: messageText
+        }),
+      });
+
+      if (response.ok) {
+        alert("🚀 Message Sent Successfully!");
+        setMessageText('');
+        setShowChat(false);
+      }
+    } catch (err) {
+      alert("📡 Connection Error!");
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[#0f0c29] p-8">
+    <div className="min-h-screen bg-[#0f0c29] p-8 relative">
       <div className="max-w-7xl mx-auto mb-12 text-center">
         <h1 className="text-5xl font-black text-white uppercase tracking-tighter mb-4 italic">
           Discovery <span className="text-pink-500">Portal</span>
@@ -54,7 +89,7 @@ const Discovery = () => {
         <p className="text-gray-400 uppercase tracking-[0.3em] text-xs">Search through lost and found reports</p>
       </div>
 
-      {/* Filter Section */}
+      {/* Filter Section (Same as your code) */}
       <div className="max-w-7xl mx-auto mb-12 grid grid-cols-1 md:grid-cols-4 gap-4">
         <input 
           type="text" 
@@ -88,58 +123,78 @@ const Discovery = () => {
         </div>
       </div>
 
+      {/* Items Grid */}
       {loading ? (
         <div className="text-center py-20 text-white font-black animate-pulse uppercase tracking-widest">Loading Reports...</div>
       ) : (
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredItems.length === 0 ? (
-            <div className="col-span-full text-center text-gray-500 font-bold uppercase py-20">No reports found in this category</div>
-          ) : (
-            filteredItems.map((item) => (
-              <div key={item._id} className="group relative bg-[#1a1a4b] border-2 border-white/5 rounded-[40px] overflow-hidden hover:border-pink-500 transition-all duration-500">
-                
-                {/* IMAGE SECTION ADDED HERE */}
-                <div className="h-64 overflow-hidden">
-                  {item.image ? (
-                    <img 
-                      src={`http://localhost:5000/uploads/${item.image}`} 
-                      alt={item.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gray-800 flex items-center justify-center text-gray-600 font-bold">NO IMAGE</div>
-                  )}
-                </div>
+          {filteredItems.map((item) => (
+            <div key={item._id} className="group relative bg-[#1a1a4b] border-2 border-white/5 rounded-[40px] overflow-hidden hover:border-pink-500 transition-all duration-500">
+              <div className="h-64 overflow-hidden">
+                {item.image ? (
+                  <img src={`http://localhost:5000/uploads/${item.image}`} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                ) : (
+                  <div className="w-full h-full bg-gray-800 flex items-center justify-center text-gray-600 font-bold">NO IMAGE</div>
+                )}
+              </div>
 
-                <div className="p-8">
-                  <div className="flex justify-between items-start mb-6">
-                    <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${item.type === 'Lost' ? 'bg-red-500/20 text-red-500' : 'bg-green-500/20 text-green-500'}`}>
-                      {item.type}
-                    </span>
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest italic">{item.city}</span>
-                  </div>
+              <div className="p-8">
+                <div className="flex justify-between items-start mb-6">
+                  <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${item.type === 'Lost' ? 'bg-red-500/20 text-red-500' : 'bg-green-500/20 text-green-500'}`}>
+                    {item.type}
+                  </span>
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest italic">{item.city}</span>
+                </div>
+                
+                <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter group-hover:text-cyan-400 transition-colors mb-2">{item.title}</h3>
+                <p className="text-gray-500 text-[10px] font-bold uppercase mb-4">Posted By: {item.user?.name || 'Anonymous'}</p>
+                
+                <p className="text-gray-400 text-sm line-clamp-2 h-12">{item.description}</p>
+                
+                <div className="mt-8 grid grid-cols-2 gap-4 pt-6 border-t border-white/5">
+                  <button onClick={() => navigate(`/item/${item._id}`)} className="py-4 bg-white/5 border-2 border-white/10 text-white rounded-2xl font-black uppercase text-[9px] tracking-widest hover:bg-white hover:text-black transition-all">
+                    Details
+                  </button>
                   
-                  <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter group-hover:text-cyan-400 transition-colors mb-2">
-                    {item.title}
-                  </h3>
-                  <p className="text-gray-500 text-[10px] font-bold uppercase mb-4">Posted By: {item.user?.name || 'Anonymous'}</p>
-                  
-                  <p className="text-gray-400 text-sm line-clamp-2 leading-relaxed h-12">
-                    {item.description}
-                  </p>
-                  
-                  <div className="mt-8 pt-6 border-t border-white/5">
-                    <button 
-                      onClick={() => navigate(`/item/${item._id}`)}
-                      className="w-full py-4 bg-white/5 border-2 border-white/10 text-white rounded-2xl font-black uppercase text-[10px] tracking-[0.3em] hover:bg-white hover:text-[#0f0c29] hover:-translate-y-1 transition-all active:scale-95"
-                    >
-                      View Details
-                    </button>
-                  </div>
+                  {/* MESSAGING BUTTON ADDED */}
+                  <button 
+                    onClick={() => { setSelectedItem(item); setShowChat(true); }}
+                    className="py-4 bg-pink-500 text-white rounded-2xl font-black uppercase text-[9px] tracking-widest shadow-lg shadow-pink-500/20 hover:scale-105 transition-all"
+                  >
+                    Chat
+                  </button>
                 </div>
               </div>
-            ))
-          )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* --- CHAT MODAL UI --- */}
+      {showChat && selectedItem && (
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-[#1a1a4b] w-full max-w-lg rounded-[30px] border-2 border-pink-500 p-8 shadow-2xl animate-in fade-in zoom-in duration-300">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-black text-white uppercase italic">Chat with <span className="text-cyan-400">{selectedItem.user?.name}</span></h2>
+              <button onClick={() => setShowChat(false)} className="text-gray-400 hover:text-white text-2xl">×</button>
+            </div>
+            
+            <p className="text-pink-500 text-[10px] font-bold uppercase mb-4 tracking-widest">Re: {selectedItem.title}</p>
+            
+            <textarea 
+              className="w-full h-40 bg-white/5 border-2 border-white/10 rounded-2xl p-4 text-white focus:border-cyan-400 outline-none transition-all placeholder:text-gray-600 mb-6"
+              placeholder="Type your message here... (e.g. I think I found your wallet!)"
+              value={messageText}
+              onChange={(e) => setMessageText(e.target.value)}
+            ></textarea>
+            
+            <button 
+              onClick={handleSendMessage}
+              className="w-full py-4 bg-gradient-to-r from-pink-500 to-cyan-500 text-white rounded-2xl font-black uppercase tracking-[0.3em] hover:opacity-90 transition-all"
+            >
+              Send Signal 🚀
+            </button>
+          </div>
         </div>
       )}
     </div>

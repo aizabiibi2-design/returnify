@@ -4,40 +4,34 @@ const cors = require("cors");
 const path = require("path");
 const connectDB = require("./config/db");
 
-// 1. IMPORT ROUTES 
-// Dhayan dain: Agar server.js aur routes folder sath hain, toh './' use hota hai
-const postRoutes = require("./routes/postRoutes");
-const itemRoutes = require("./routes/itemRoutes"); 
+// Routes Import
 const authRoutes = require("./routes/authRoutes"); 
-const messageRoutes = require('./routes/messageRoutes')
+const itemRoutes = require("./routes/itemRoutes"); 
+const messageRoutes = require('./routes/messageRoutes');
+const actionRoutes = require("./routes/actionRoutes");
 
 dotenv.config();
-connectDB();
+connectDB(); // Database Connect
 
 const app = express();
 
-app.use(cors({
-    origin: "http://localhost:5173", 
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true
-}));
-
+// Middleware
+app.use(cors({ origin: "http://localhost:5173", credentials: true }));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// --- Routes Registration ---
-
-// 2. USE ROUTES 
+// Routes Registration
 app.use("/api/auth", authRoutes);
-app.use("/api/items", postRoutes); 
-app.use("/api/actions", itemRoutes); 
+app.use("/api/items", itemRoutes); 
 app.use('/api/messages', messageRoutes);
+app.use('/api/actions', actionRoutes); 
 
-app.get("/", (req, res) => {
-  res.send("API running...");
+// Global Error Handler
+app.use((err, req, res, next) => {
+    const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
+    res.status(statusCode).json({ message: err.message });
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

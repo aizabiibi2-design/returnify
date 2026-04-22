@@ -1,96 +1,122 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import { useParams } from 'react-router-dom';
 
-const Chat = () => {
-    const { token, user } = useContext(AuthContext);
-    const { receiverId } = useParams(); // URL se receiver ki ID uthayega
-    const [messages, setMessages] = useState([]);
-    const [newMessage, setNewMessage] = useState("");
+const Discovery = () => {
+  const { token } = useContext(AuthContext);
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
+  
+  const [showChatModal, setShowChatModal] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [newMessage, setNewMessage] = useState("");
 
-    // 1. Messages Fetch Karne ka Function
-    const fetchMessages = async () => {
-        try {
-            const res = await fetch(`http://localhost:5000/api/messages/${receiverId}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await res.json();
-            setMessages(data);
-        } catch (err) {
-            console.error("Messages nahi aa sakay:", err);
-        }
+  
+  useEffect(() => {
+    const fetchItems = async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/items');
+        const data = await res.json();
+        setItems(data);
+        setLoading(false);
+      } catch (err) {
+        console.error("Fetch error:", err);
+        setLoading(false);
+      }
     };
+    fetchItems();
+  }, []);
 
-    useEffect(() => {
-        fetchMessages();
-        // Har 3 second baad auto-refresh (Initial stage ke liye)
-        const interval = setInterval(fetchMessages, 3000);
-        return () => clearInterval(interval);
-    }, [receiverId]);
+  // 2. Open Chat Modal logic
+  const openChat = (item) => {
+    setSelectedItem(item);
+    setShowChatModal(true);
+  };
 
-    // 2. Message Bhejne ka Function
-    const handleSendMessage = async (e) => {
-        e.preventDefault();
-        if (!newMessage.trim()) return;
+  // 3. Send Signal Logic (FIXED)
+  const handleSendSignal = async (e) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !selectedItem) return;
 
-        try {
-            const res = await fetch('http://localhost:5000/api/messages/send', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    receiverId: receiverId,
-                    text: newMessage
-                })
-            });
+    try {
+      const res = await fetch('http://localhost:5000/api/messages/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          receiver: selectedItem.user._id || selectedItem.user, // Get seller ID
+          itemId: selectedItem._id, // Get item ID
+          text: newMessage
+        })
+      });
 
-            if (res.ok) {
-                setNewMessage("");
-                fetchMessages(); // List update karein
-            }
-        } catch (err) {
-            alert("Message send nahi hua!");
-        }
-    };
+      const data = await res.json();
 
-    return (
-        <div className="min-h-screen bg-[#0f0c29] p-6 flex flex-col items-center">
-            <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl flex flex-col h-[80vh] overflow-hidden">
-                {/* Header */}
-                <div className="bg-[#1a1a4b] p-4 text-white font-bold text-center">
-                    Chat with User
-                </div>
+      if (res.ok) {
+        alert("Signal Sent! 🚀");
+        setNewMessage("");
+        setShowChatModal(false);
+      } else {
+        alert(data.message || "Failed to send signal");
+      }
+    } catch (err) {
+      alert("Connection Error! Backend server check karein.");
+    }
+  };
 
-                {/* Messages Area */}
-                <div className="flex-1 p-4 overflow-y-auto bg-gray-50 flex flex-col space-y-3">
-                    {messages.map((msg, index) => (
-                        <div key={index} className={`max-w-[70%] p-3 rounded-2xl font-bold text-sm ${
-                            msg.senderId === user._id 
-                            ? "bg-[#ff007a] text-white self-end rounded-tr-none" 
-                            : "bg-gray-200 text-[#1a1a4b] self-start rounded-tl-none"
-                        }`}>
-                            {msg.text}
-                        </div>
-                    ))}
-                </div>
+  if (loading) return <div className="text-white text-center mt-20 font-black italic uppercase animate-pulse">Scanning Network...</div>;
 
-                {/* Input Area */}
-                <form onSubmit={handleSendMessage} className="p-4 border-t flex gap-2">
-                    <input 
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        placeholder="Type a message..."
-                        className="flex-1 p-3 border-2 rounded-xl outline-none focus:border-[#00d4ff] text-black font-semibold"
-                    />
-                    <button type="submit" className="bg-[#1a1a4b] text-white px-6 py-2 rounded-xl font-black uppercase text-xs">
-                        Send
-                    </button>
-                </form>
+  return (
+    <div className="min-h-screen bg-[#0f0c29] p-8">
+      <h1 className="text-white text-4xl font-black uppercase italic mb-10 tracking-tighter text-center">
+        Discovery <span className="text-bright-cyan">Network</span>
+      </h1>
+
+      {/* Items Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {items.map((item) => (
+          <div key={item._id} className="bg-white/5 border border-white/10 rounded-[30px] overflow-hidden group hover:border-bright-cyan transition-all">
+            <img src={`http://localhost:5000/uploads/${item.image}`} className="h-48 w-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" alt="item" />
+            <div className="p-6">
+              <h3 className="text-white font-black uppercase text-lg">{item.title}</h3>
+              <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mt-1 mb-4">📍 {item.location}</p>
+              
+              <div className="flex gap-2">
+                <button onClick={() => window.location.href=`/item/${item._id}`} className="flex-1 bg-white/10 text-white py-3 rounded-xl font-black text-[10px] uppercase">Details</button>
+                <button onClick={() => openChat(item)} className="flex-1 bg-neon-pink text-white py-3 rounded-xl font-black text-[10px] uppercase shadow-lg">Chat</button>
+              </div>
             </div>
+          </div>
+        ))}
+      </div>
+
+      {/* --- CHAT MODAL (The Popup) --- */}
+      {showChatModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-[#1a1a4b] w-full max-w-md rounded-[40px] border-2 border-bright-cyan p-8 relative shadow-[0_0_50px_rgba(0,212,255,0.3)]">
+            <button onClick={() => setShowChatModal(false)} className="absolute top-6 right-6 text-white/50 hover:text-white font-black">✕</button>
+            
+            <h2 className="text-white font-black uppercase italic tracking-widest text-sm mb-1">Signal Transmission</h2>
+            <p className="text-bright-cyan text-[10px] font-bold uppercase mb-6 opacity-60">RE: {selectedItem?.title}</p>
+
+            <form onSubmit={handleSendSignal}>
+              <textarea 
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder="Enter your message..."
+                className="w-full h-32 bg-black/20 border border-white/10 rounded-2xl p-4 text-white font-medium text-sm outline-none focus:border-neon-pink transition-all resize-none mb-4"
+              />
+              <button type="submit" className="w-full py-4 bg-gradient-to-r from-bright-cyan to-royal-blue text-white font-black uppercase tracking-[0.3em] text-[10px] rounded-2xl shadow-neon hover:scale-[1.02] active:scale-95 transition-all">
+                Send Signal 🚀
+              </button>
+            </form>
+          </div>
         </div>
-    );
+      )}
+    </div>
+  );
 };
 
-export default Chat;
+export default Discovery;

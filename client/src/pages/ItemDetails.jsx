@@ -87,9 +87,9 @@ const ItemDetails = () => {
           {/* Action Buttons */}
           <div className="grid grid-cols-1 gap-4">
             
-            {/* BUTTON 1: DIRECT CHAT */}
+            {/* UPDATED: Message Seller Button - Passes both Item ID and User ID */}
             <button 
-              onClick={() => navigate(`/chat/${item.user?._id}`)}
+              onClick={() => navigate(`/chat/${item._id}/${item.user?._id}`)}
               className="w-full py-5 bg-neon-pink text-white rounded-2xl font-black uppercase text-xs tracking-[0.3em] text-center shadow-lg hover:bg-[#e6006e] transition-all active:scale-95 flex items-center justify-center gap-2"
             >
               Message Seller 💬

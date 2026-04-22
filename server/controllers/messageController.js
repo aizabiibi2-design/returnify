@@ -5,71 +5,67 @@ exports.sendMessage = async (req, res) => {
     try {
         const { receiver, itemId, text } = req.body;
         const sender = req.user.id; 
-
-        if (!receiver || !text) {
-            return res.status(400).json({ message: "Receiver and text are required" });
+        if (!receiver || !text || !itemId) {
+            return res.status(400).json({ message: "Missing details" });
         }
-
-        const newMessage = new Message({
-            sender,
-            receiver,
-            itemId,
-            text
-        });
-
+        const newMessage = new Message({ sender, receiver, itemId, text });
         await newMessage.save();
-        
-        // Populate sender and receiver details immediately after saving
-        const populatedMessage = await Message.findById(newMessage._id)
-            .populate('sender', 'name email')
-            .populate('receiver', 'name email');
-
-        res.status(201).json(populatedMessage);
+        res.status(201).json(newMessage);
     } catch (error) {
-        res.status(500).json({ 
-            message: "Failed to send message", 
-            error: error.message 
-        });
+        res.status(500).json({ message: error.message });
     }
 };
 
-// 2. Get Chat History
+// 2. Get Chat History (Yahi naam routes mein hona chahiye)
 exports.getChatHistory = async (req, res) => {
     try {
         const { itemId, otherUserId } = req.params;
-        const userId = req.user.id;
-
         const messages = await Message.find({
-            itemId: itemId,
+            itemId,
             $or: [
-                { sender: userId, receiver: otherUserId },
-                { sender: otherUserId, receiver: userId }
+                { sender: req.user.id, receiver: otherUserId },
+                { sender: otherUserId, receiver: req.user.id }
             ]
-        })
-        .populate('sender', 'name')
-        .sort({ createdAt: 1 });
-
+        }).sort({ createdAt: 1 });
         res.json(messages);
     } catch (error) {
-        res.status(500).json({ 
-            message: "Could not load chat history", 
-            error: error.message 
-        });
+        res.status(500).json({ message: error.message });
     }
 };
 
-// 3. Get All Conversations (For Inbox)
+// 3. Get Conversations
 exports.getConversations = async (req, res) => {
     try {
-        const userId = req.user.id;
-        const messages = await Message.find({
-            $or: [{ sender: userId }, { receiver: userId }]
-        })
-        .populate('sender receiver', 'name')
-        .sort({ createdAt: -1 });
-
-        res.json(messages);
+      const userId = req.user.id;
+      // Un saaray messages ko dhoondo jahan user sender ya receiver ho
+      const messages = await Message.find({
+        $or: [{ sender: userId }, { receiver: userId }]
+      })
+      .populate('sender receiver', 'name email')
+      .populate('itemId', 'title')
+      .sort({ createdAt: -1 });
+  
+      // Conversations ko group karna taake aik hi banda bar bar nazar na aaye
+      const conversations = [];
+      const seenUsers = new Set();
+  
+      messages.forEach(msg => {
+        const otherUser = msg.sender._id.toString() === userId ? msg.receiver : msg.sender;
+        const conversationKey = `${otherUser._id}-${msg.itemId._id}`;
+  
+        if (!seenUsers.has(conversationKey)) {
+          seenUsers.add(conversationKey);
+          conversations.push({
+            otherUser,
+            lastMessage: msg.text,
+            item: msg.itemId,
+            date: msg.createdAt
+          });
+        }
+      });
+  
+      res.json(conversations);
     } catch (error) {
-        res.status(500).json({ message: "Failed to load conversations" });
+      res.status(500).json({ message: error.message });
     }
-};
+  };

@@ -1,21 +1,23 @@
 const express = require('express');
-const router = express.Router(); // Yeh line missing thi ya galat thi!
+const router = express.Router();
 const itemController = require('../controllers/itemController');
 const { protect } = require('../middleware/authMiddleware');
+const ItemModel = require("../models/Item"); // Maine 'Item' ko 'ItemModel' kar dia hai
 
-// 1. Leaderboard
-router.get('/leaderboard/top', itemController.getLeaderboard);
-
-// 2. Admin Dashboard stats
+// Admin Dashboard Routes
 router.get('/admin/dashboard', protect, itemController.getAdminDashboard);
+router.put('/admin/resolve/:id', protect, itemController.resolveItem);
+router.delete('/:id', protect, itemController.deleteItem);
 
-// 3. Discovery Page data
-router.get('/all-items', itemController.getAllItems);
+// Discovery Page: Public access
+router.get('/all-items', async (req, res) => {
+    try {
+        // Niche bhi 'Item' ki jagah 'ItemModel' kar dia
+        const items = await ItemModel.find().populate('user', 'name email').sort({ createdAt: -1 });
+        res.status(200).json(items);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
 
-// 4. Claiming functionality
-router.post('/claim', protect, itemController.claimItem);
-
-// 5. Post Item (Agar aap yahan se handle kar rahi hain)
-router.post('/post-item', protect, itemController.postItem);
-
-module.exports = router; 
+module.exports = router;

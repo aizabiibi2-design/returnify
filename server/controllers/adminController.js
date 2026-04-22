@@ -1,11 +1,11 @@
-const ItemModel = require("../models/Item");
 const User = require("../models/User");
+const ItemModel = require("../models/Item");
 
-// 1. Dashboard Data Function
+// Function definition
 const getAdminDashboard = async (req, res) => {
   try {
     const allPosts = await ItemModel.find().populate('user', 'name email').sort({ createdAt: -1 });
-    const allUsers = await User.find().select('-password');
+    const allUsers = await User.find().select('-password').sort({ createdAt: -1 });
 
     const lostItems = allPosts.filter(i => i.type.toLowerCase() === 'lost');
     const foundItems = allPosts.filter(i => i.type.toLowerCase() === 'found');
@@ -42,33 +42,5 @@ const getAdminDashboard = async (req, res) => {
   }
 };
 
-// 2. Status Update Function (NEW)
-const resolveItem = async (req, res) => {
-  try {
-    // Database mein status ko "Resolved" update karega
-    await ItemModel.findByIdAndUpdate(req.params.id, { status: 'Resolved' });
-    res.status(200).json({ success: true, message: "Item marked as Resolved" });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// 3. Delete Function (NEW)
-const deleteItem = async (req, res) => {
-    try {
-      await ItemModel.findByIdAndDelete(req.params.id);
-      res.status(200).json({ success: true, message: "Item Deleted" });
-    } catch (error) {
-      res.status(500).json({ success: false, message: error.message });
-    }
-};
-
-module.exports = {
-    getAdminDashboard,
-    resolveItem,
-    deleteItem,
-    getLeaderboard: exports.getLeaderboard || (async () => {}),
-    getAllItems: exports.getAllItems || (async () => {}),
-    claimItem: exports.claimItem || (async () => {}),
-    postItem: exports.postItem || (async () => {})
-};
+// CRITICAL: Yeh line check karein!
+module.exports = { getAdminDashboard };

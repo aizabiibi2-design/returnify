@@ -1,36 +1,46 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 
 const Admin = () => {
-    const [data, setData] = useState(null); 
+    const [data, setData] = useState({ 
+        stats: { users: 0, reports: 0, lost: 0, found: 0 }, 
+        allPosts: [], 
+        allUsers: [], 
+        matches: [],
+        heroes: []
+    }); 
     const [activeTab, setActiveTab] = useState('reports');
     const [loading, setLoading] = useState(true);
 
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             const res = await axios.get('http://localhost:5000/api/items/admin/dashboard', {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            if (res.data.success) setData(res.data);
+            if (res.data.success) {
+                setData(res.data);
+            }
         } catch (err) {
             console.error("Fetch Error:", err);
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    useEffect(() => { fetchData(); }, []);
+    useEffect(() => { fetchData(); }, [fetchData]);
 
-    // Logic: Item ko resolved mark karne ke liye
     const handleResolve = async (id) => {
         try {
             const token = localStorage.getItem('token');
-            await axios.put(`http://localhost:5000/api/items/admin/resolve/${id}`, {}, {
+            const res = await axios.put(`http://localhost:5000/api/items/admin/resolve/${id}`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            fetchData(); 
-        } catch (err) { alert("Status update failed"); }
+            if (res.data.success) {
+                alert("SUCCESS: Item Resolved! 🎉");
+                fetchData(); // Documentation Logic: Reload to update matches and stats
+            }
+        } catch (err) { alert("Update Failed"); }
     };
 
     const handleDelete = async (id) => {
@@ -45,13 +55,13 @@ const Admin = () => {
         }
     };
 
-    if (loading) return <div className="h-screen bg-[#0f0c29] flex items-center justify-center text-white font-black italic uppercase animate-pulse">Syncing Returnify...</div>;
+    if (loading) return <div className="h-screen bg-[#0f0c29] flex items-center justify-center text-white font-black italic uppercase animate-pulse">Syncing Admin...</div>;
 
     return (
-        <div className="p-10 bg-[#0f0c29] min-h-screen text-white font-sans">
+        <div className="p-10 bg-[#0f0c29] min-h-screen text-white">
             <div className="flex justify-between items-center mb-12">
-                <h1 className="text-4xl font-black italic uppercase bg-gradient-to-r from-pink-500 to-cyan-400 bg-clip-text text-transparent italic tracking-tighter">RETURNIFY CONTROL</h1>
-                <button onClick={() => setActiveTab('ai-engine')} className="bg-white text-black px-6 py-2 rounded-xl font-black text-[10px] flex items-center gap-2 uppercase shadow-xl hover:bg-cyan-400 transition-all">
+                <h1 className="text-4xl font-black italic uppercase bg-gradient-to-r from-pink-500 to-cyan-400 bg-clip-text text-transparent">RETURNIFY CONTROL</h1>
+                <button onClick={() => setActiveTab('ai-engine')} className="bg-white text-black px-6 py-2 rounded-xl font-black text-[10px] uppercase hover:bg-cyan-400 transition-all">
                     <span>⚡</span> RUN AI MATCHER ({data?.matches?.length || 0})
                 </button>
             </div>
@@ -63,15 +73,15 @@ const Admin = () => {
                   { label: 'FOUND', val: data?.stats?.found, color: 'text-green-500' }
                 ].map((s, i) => (
                     <div key={i} className="bg-white/5 p-8 rounded-[30px] border border-white/5 shadow-2xl">
-                        <p className="text-[10px] uppercase font-black text-gray-500 mb-2 tracking-widest">{s.label}</p>
+                        <p className="text-[10px] uppercase font-black text-gray-500 mb-2">{s.label}</p>
                         <h2 className={`text-5xl font-black ${s.color}`}>{s.val || 0}</h2>
                     </div>
                 ))}
             </div>
 
             <div className="flex gap-4 mb-8">
-                {['reports', 'user-registry', 'ai-engine'].map(tab => (
-                    <button key={tab} onClick={() => setActiveTab(tab)} className={`px-8 py-2 rounded-full text-[10px] font-black uppercase transition-all ${activeTab === tab ? 'bg-pink-600' : 'bg-white/5 text-gray-600'}`}>{tab.replace('-', ' ')}</button>
+                {['reports', 'user-registry', 'ai-engine', 'community-heroes'].map(tab => (
+                    <button key={tab} onClick={() => setActiveTab(tab)} className={`px-8 py-2 rounded-full text-[10px] font-black uppercase transition-all ${activeTab === tab ? 'bg-pink-600 shadow-[0_0_15px_pink]' : 'bg-white/5 text-gray-600 hover:text-white'}`}>{tab.replace('-', ' ')}</button>
                 ))}
             </div>
 
@@ -92,13 +102,13 @@ const Admin = () => {
                                     <td className="py-6 font-black italic uppercase text-lg">{p.title}</td>
                                     <td className={`py-6 text-center font-black text-[12px] ${p.type === 'Lost' ? 'text-red-500' : 'text-green-500'}`}>{p.type}</td>
                                     <td className="py-6 text-center text-gray-400 font-bold uppercase text-[10px]">
-                                        {p.status === 'Resolved' ? <span className="text-green-400">✓ Returned</span> : <span className="text-yellow-500 tracking-widest opacity-50">Pending</span>}
+                                        {p.status === 'Resolved' ? <span className="text-green-400 font-black italic">✓ Returned</span> : <span className="text-yellow-500 tracking-widest opacity-50">Pending</span>}
                                     </td>
                                     <td className="py-6 text-right flex gap-4 justify-end items-center">
                                         {p.status !== 'Resolved' && (
-                                            <button onClick={() => handleResolve(p._id)} className="text-cyan-400 hover:text-white border border-cyan-400/30 px-3 py-1 rounded-lg text-[9px] font-black uppercase transition-all">Resolve</button>
+                                            <button onClick={() => handleResolve(p._id)} className="text-cyan-400 hover:text-white border border-cyan-400/30 px-3 py-1 rounded-lg text-[9px] font-black uppercase">Resolve</button>
                                         )}
-                                        <button onClick={() => handleDelete(p._id)} className="text-red-500 text-[9px] font-black uppercase">Delete</button>
+                                        <button onClick={() => handleDelete(p._id)} className="text-red-500 text-[9px] font-black uppercase hover:underline">Delete</button>
                                     </td>
                                 </tr>
                             ))}
@@ -109,22 +119,50 @@ const Admin = () => {
                 {activeTab === 'user-registry' && (
                     <div className="grid gap-4">
                         {data?.allUsers?.map(u => (
-                            <div key={u._id} className="bg-white/5 p-6 rounded-[25px] border border-white/5 flex justify-between items-center"><span className="font-black italic uppercase text-cyan-400 text-lg">{u.name || "USER"}</span><span className="text-gray-500 text-[10px] font-bold uppercase">{u.email}</span></div>
+                            <div key={u._id} className="bg-white/5 p-6 rounded-[25px] border border-white/5 flex justify-between items-center">
+                                <span className="font-black italic uppercase text-cyan-400 text-lg">{u.name || "USER"}</span>
+                                <span className="text-gray-500 text-[10px] font-bold uppercase">{u.email}</span>
+                            </div>
                         ))}
                     </div>
                 )}
 
                 {activeTab === 'ai-engine' && (
                     <div className="grid gap-6">
-                        {data?.matches?.map((m, i) => (
-                            <div key={i} className="bg-white/5 p-10 rounded-[35px] border border-white/5 flex justify-between items-center shadow-2xl">
-                                <div>
-                                    <h3 className="text-2xl font-black italic uppercase text-white">LOST: <span className="text-pink-500">{m.lostItem}</span> ↔ FOUND: <span className="text-cyan-400">{m.foundItem}</span></h3>
-                                    <p className="text-[10px] text-gray-500 uppercase mt-2 font-bold tracking-widest italic">Matched By: {m.reporterL} & {m.reporterF}</p>
+                        {data?.matches?.length > 0 ? (
+                            data.matches.map((m, i) => (
+                                <div key={i} className="bg-white/5 p-10 rounded-[35px] border border-white/5 flex justify-between items-center">
+                                    <div>
+                                        <h3 className="text-2xl font-black italic uppercase text-white">LOST: <span className="text-pink-500">{m.lostItem}</span> ↔ FOUND: <span className="text-cyan-400">{m.foundItem}</span></h3>
+                                        <p className="text-[10px] text-gray-500 uppercase mt-2 font-bold italic tracking-widest italic">Matched By: {m.reporterL} & {m.reporterF}</p>
+                                    </div>
+                                    <div className="bg-green-500 text-black px-8 py-3 rounded-full text-sm font-black italic">MATCH: 100%</div>
                                 </div>
-                                <div className="bg-green-500 text-black px-8 py-3 rounded-full text-sm font-black shadow-[0_0_30px_rgba(34,197,94,0.4)] italic">MATCH: 100%</div>
-                            </div>
-                        ))}
+                            ))
+                        ) : (
+                            <div className="text-center text-gray-500 py-20 font-black italic uppercase">No AI Matches Detected.</div>
+                        )}
+                    </div>
+                )}
+
+                {activeTab === 'community-heroes' && (
+                    <div className="grid gap-6">
+                        {data?.heroes?.length > 0 ? (
+                            data.heroes.map((h, i) => (
+                                <div key={i} className="bg-white/5 p-8 rounded-[35px] border border-white/5 flex justify-between items-center">
+                                    <div>
+                                        <h3 className="text-xl font-black italic uppercase text-cyan-400">{h.name}</h3>
+                                        <p className="text-[10px] text-gray-500 font-bold uppercase">{h.email}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <span className="text-2xl font-black text-pink-500">{h.points}</span>
+                                        <p className="text-[9px] text-white/30 uppercase font-black italic">Return Points</p>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="text-center text-gray-500 py-20 font-black italic uppercase">No Heroes identified in this cycle yet.</div>
+                        )}
                     </div>
                 )}
             </div>

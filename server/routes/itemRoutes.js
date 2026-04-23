@@ -1,23 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const itemController = require('../controllers/itemController');
+const adminController = require('../controllers/itemController'); // Check karein agar controller ka naam yehi hai
 const { protect } = require('../middleware/authMiddleware');
-const ItemModel = require("../models/Item"); // Maine 'Item' ko 'ItemModel' kar dia hai
 
-// Admin Dashboard Routes
-router.get('/admin/dashboard', protect, itemController.getAdminDashboard);
-router.put('/admin/resolve/:id', protect, itemController.resolveItem);
-router.delete('/:id', protect, itemController.deleteItem);
+// Dashboard & Discovery
+router.get('/admin/dashboard', protect, adminController.getAdminDashboard);
+router.get('/all-items', adminController.getAllItems);
 
-// Discovery Page: Public access
-router.get('/all-items', async (req, res) => {
-    try {
-        // Niche bhi 'Item' ki jagah 'ItemModel' kar dia
-        const items = await ItemModel.find().populate('user', 'name email').sort({ createdAt: -1 });
-        res.status(200).json(items);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-});
+// Action Routes
+router.put('/admin/resolve/:id', protect, adminController.resolveItem);
+router.delete('/delete/:id', protect, adminController.deleteItem); // Ye line missing thi!
 
 module.exports = router;

@@ -6,9 +6,10 @@ const connectDB = require("./config/db");
 
 // Routes Import
 const authRoutes = require("./routes/authRoutes"); 
-const itemRoutes = require("./routes/itemRoutes"); 
+const itemRoutes = require("./routes/itemRoutes");
 const messageRoutes = require('./routes/messageRoutes');
 const actionRoutes = require("./routes/actionRoutes");
+const postRoutes = require("./routes/postRoutes");
 
 dotenv.config();
 connectDB(); // Database Connect
@@ -26,7 +27,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/items", itemRoutes); 
 app.use('/api/messages', messageRoutes);
 app.use('/api/actions', actionRoutes); 
-
+app.use("/api/posts", postRoutes);
 // Global Error Handler
 app.use((err, req, res, next) => {
     const statusCode = res.statusCode === 200 ? 500 : res.statusCode;

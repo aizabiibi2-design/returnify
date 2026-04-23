@@ -1,46 +1,56 @@
-const User = require("../models/User");
 const ItemModel = require("../models/Item");
+const User = require("../models/User");
 
-// Function definition
-const getAdminDashboard = async (req, res) => {
-  try {
-    const allPosts = await ItemModel.find().populate('user', 'name email').sort({ createdAt: -1 });
-    const allUsers = await User.find().select('-password').sort({ createdAt: -1 });
+exports.getAdminDashboard = async (req, res) => {
+    try {
+        // 1. Fetch data directly from 'posts' collection
+        const allPosts = await ItemModel.find().populate('user', 'name email').sort({ date: -1 });
+        const allUsers = await User.find().select('-password').sort({ joinedAt: -1 });
 
-    const lostItems = allPosts.filter(i => i.type.toLowerCase() === 'lost');
-    const foundItems = allPosts.filter(i => i.type.toLowerCase() === 'found');
+        // 2. Logic for Stats
+        const lostItems = allPosts.filter(i => i.type === 'Lost');
+        const foundItems = allPosts.filter(i => i.type === 'Found');
 
-    const matches = [];
-    lostItems.forEach(l => {
-      foundItems.forEach(f => {
-        if (l.title.toLowerCase().trim() === f.title.toLowerCase().trim()) {
-          matches.push({
-            lostItem: l.title,
-            foundItem: f.title,
-            reporterL: l.user?.name || "Aiza Pervaiz",
-            reporterF: f.user?.name || "Aiza Bibi",
-            matchScore: "100%" 
-          });
-        }
-      });
-    });
+        // 3. Simple Title Matching for AI Engine
+        const matches = [];
+        lostItems.forEach(l => {
+            foundItems.forEach(f => {
+                if (l.title.toLowerCase().trim() === f.title.toLowerCase().trim()) {
+                    matches.push({
+                        lostItem: l.title,
+                        foundItem: f.title,
+                        reporterL: l.user?.name || "User A",
+                        reporterF: f.user?.name || "User B"
+                    });
+                }
+            });
+        });
 
-    res.status(200).json({
-      success: true,
-      stats: { 
-        users: allUsers.length, 
-        reports: allPosts.length, 
-        lost: lostItems.length, 
-        found: foundItems.length 
-      },
-      allPosts,
-      allUsers,
-      matches 
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
+        // 4. Community Heroes - Unko dikhayein jin ke points > 0 hain
+        const heroes = allUsers.filter(u => u.points > 0).sort((a, b) => b.points - a.points);
+
+        res.status(200).json({
+            success: true,
+            stats: { users: allUsers.length, reports: allPosts.length, lost: lostItems.length, found: foundItems.length },
+            allPosts, // Discovery Portal yahan se chalega
+            allUsers,
+            matches,
+            heroes // Community Heroes yahan se chalenge
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
 };
 
-// CRITICAL: Yeh line check karein!
-module.exports = { getAdminDashboard };
+exports.resolveItem = async (req, res) => {
+    try {
+        const updatedItem = await ItemModel.findByIdAndUpdate(
+            req.params.id,
+            { status: "Resolved" },
+            { new: true }
+        );
+        res.status(200).json({ success: true, item: updatedItem });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};

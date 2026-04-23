@@ -8,6 +8,12 @@ const itemSchema = new mongoose.Schema({
     type: { type: String, enum: ['Lost', 'Found'], required: true },
     image: { type: String },
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    // ADD THIS: Status field lazmi hai taake Resolved items filter ho sakein
+    status: { 
+        type: String, 
+        enum: ['Pending', 'Resolved'], 
+        default: 'Pending' 
+    },
     date: { type: Date, default: Date.now }
 }, { collection: 'posts' });
 

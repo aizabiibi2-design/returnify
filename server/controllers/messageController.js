@@ -6,7 +6,7 @@ exports.sendMessage = async (req, res) => {
         const { receiver, itemId, text } = req.body;
         const sender = req.user.id; 
         if (!receiver || !text || !itemId) {
-            return res.status(400).json({ message: "Missing details" });
+            return res.status(400).json({ message: "Missing details: Receiver, Item, or Text" });
         }
         const newMessage = new Message({ sender, receiver, itemId, text });
         await newMessage.save();
@@ -16,7 +16,7 @@ exports.sendMessage = async (req, res) => {
     }
 };
 
-// 2. Get Chat History (Yahi naam routes mein hona chahiye)
+// 2. Get Chat History (Specific conversation between two users on one item)
 exports.getChatHistory = async (req, res) => {
     try {
         const { itemId, otherUserId } = req.params;
@@ -33,23 +33,24 @@ exports.getChatHistory = async (req, res) => {
     }
 };
 
-// 3. Get Conversations
+// 3. Get Conversations (Inbox list)
 exports.getConversations = async (req, res) => {
     try {
       const userId = req.user.id;
-      // Un saaray messages ko dhoondo jahan user sender ya receiver ho
       const messages = await Message.find({
         $or: [{ sender: userId }, { receiver: userId }]
       })
       .populate('sender receiver', 'name email')
-      .populate('itemId', 'title')
+      .populate('itemId', 'title') // Returns title of the wallet/mobile
       .sort({ createdAt: -1 });
   
-      // Conversations ko group karna taake aik hi banda bar bar nazar na aaye
       const conversations = [];
       const seenUsers = new Set();
   
       messages.forEach(msg => {
+        // Agar item delete ho gaya ho toh skip karein (Critical fix)
+        if (!msg.itemId) return;
+
         const otherUser = msg.sender._id.toString() === userId ? msg.receiver : msg.sender;
         const conversationKey = `${otherUser._id}-${msg.itemId._id}`;
   
@@ -68,4 +69,4 @@ exports.getConversations = async (req, res) => {
     } catch (error) {
       res.status(500).json({ message: error.message });
     }
-  };
+};

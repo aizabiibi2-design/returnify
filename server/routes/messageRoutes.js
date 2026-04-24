@@ -1,20 +1,24 @@
 const express = require('express');
 const router = express.Router();
+
+// Humne functions ko direct import kar liya hai
 const { 
     sendMessage, 
     getChatHistory, 
-    getConversations 
+    getUserInbox 
 } = require('../controllers/messageController');
+
 const { protect } = require('../middleware/authMiddleware');
 
-// Route for sending a message
+// 1. Message bhejney ke liye
 router.post('/send', protect, sendMessage);
 
-// Route for fetching specific history (Used in Chat.jsx)
-// Frontend call: axios.get(`/api/messages/history/${itemId}/${otherUserId}`)
+// 2. Chat history dekhne ke liye (Specific Chat)
 router.get('/history/:itemId/:otherUserId', protect, getChatHistory);
 
-// Route for Inbox list (Used in Inbox/Dashboard)
-router.get('/conversations', protect, getConversations);
+// 3. Inbox dekhne ke liye (Jahan sarey messages nazar ayenge)
+// Yahan humne "messageController." hata diya hai kyunke function direct upar import hai
+router.get('/inbox', protect, getUserInbox);
+router.get('/conversations', protect, getUserInbox);
 
 module.exports = router;

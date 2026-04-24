@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 
 const Chat = () => {
-  const { itemId, otherUserId } = useParams(); // URL looks like: /chat/itemID/otherUserID
+  const { itemId, otherUserId } = useParams(); 
   const { token, user } = useContext(AuthContext);
   const navigate = useNavigate();
   
@@ -13,28 +13,18 @@ const Chat = () => {
   const [loading, setLoading] = useState(true);
   const chatEndRef = useRef(null);
 
-  // Auto-scroll logic
   const scrollToBottom = () => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  useEffect(() => {
-    if (!token) navigate('/login');
-    fetchInitialData();
-  }, [itemId, otherUserId]);
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const fetchInitialData = async () => {
+  const fetchChatData = async () => {
     try {
-      // 1. Fetch Item Details
+      // Fetch Item Details
       const itemRes = await fetch(`http://localhost:5000/api/items/details/${itemId}`);
       const itemData = await itemRes.json();
       setItemDetails(itemData);
 
-      // 2. Fetch Chat History using the new specific route
+      // Fetch Chat History
       const msgRes = await fetch(`http://localhost:5000/api/messages/history/${itemId}/${otherUserId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -42,10 +32,22 @@ const Chat = () => {
       setMessages(msgData);
       setLoading(false);
     } catch (err) {
-      console.error("Error loading chat data");
-      setLoading(false);
+      console.error("Connection error");
     }
   };
+
+  useEffect(() => {
+    if (!token) navigate('/login');
+    fetchChatData();
+
+    // AUTO-POLLING: Har 3 seconds baad messages refresh karein
+    const interval = setInterval(fetchChatData, 3000);
+    return () => clearInterval(interval);
+  }, [itemId, otherUserId]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const handleSend = async (e) => {
     e.preventDefault();
@@ -67,8 +69,7 @@ const Chat = () => {
 
       if (res.ok) {
         setNewMessage("");
-        // Optimistic UI update or re-fetch
-        fetchInitialData(); 
+        fetchChatData(); 
       }
     } catch (err) {
       alert("Transmission failed!");
@@ -84,21 +85,21 @@ const Chat = () => {
         {/* Header */}
         <div className="p-6 bg-white/5 border-b border-white/10 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-tr from-[#ff007a] to-cyan-400 rounded-2xl flex items-center justify-center text-white font-black">
-              {itemDetails?.title?.charAt(0).toUpperCase()}
+            <div className="w-12 h-12 bg-gradient-to-tr from-[#ff007a] to-cyan-400 rounded-2xl flex items-center justify-center text-white font-black uppercase">
+              {itemDetails?.title?.charAt(0)}
             </div>
             <div>
-              <h1 className="text-white font-black uppercase italic tracking-tighter text-lg leading-none">Secure Communication</h1>
-              <p className="text-cyan-400 text-[9px] font-bold uppercase tracking-widest mt-1 italic">Item: {itemDetails?.title}</p>
+              <h1 className="text-white font-black uppercase italic tracking-tighter text-lg leading-none">Signal Hub</h1>
+              <p className="text-cyan-400 text-[9px] font-bold uppercase tracking-widest mt-1 italic">Talking about: {itemDetails?.title}</p>
             </div>
           </div>
           <button onClick={() => navigate(-1)} className="text-white/30 hover:text-white font-black uppercase text-[10px] tracking-widest transition-all">✕ Close</button>
         </div>
 
         {/* Chat Bubbles */}
-        <div className="flex-1 overflow-y-auto p-8 space-y-6 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]">
+        <div className="flex-1 overflow-y-auto p-8 space-y-6">
           {messages.length > 0 ? messages.map((msg, i) => {
-            const isMe = msg.sender === user?._id || msg.sender?._id === user?._id;
+            const isMe = (msg.sender?._id || msg.sender) === (user?._id || user);
             return (
               <div key={i} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[70%] p-5 rounded-3xl text-xs font-bold leading-relaxed shadow-xl ${
@@ -107,36 +108,27 @@ const Chat = () => {
                   : 'bg-white/10 text-cyan-100 rounded-tl-none border border-white/5'
                 }`}>
                   {msg.text}
-                  <div className={`text-[7px] mt-2 opacity-40 uppercase italic flex items-center gap-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
-                    {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    {isMe && <span>• Sent</span>}
-                  </div>
                 </div>
               </div>
             );
           }) : (
             <div className="h-full flex flex-col items-center justify-center opacity-20 italic">
-               <p className="text-white text-[10px] font-black uppercase tracking-[0.4em]">No Signals in this channel</p>
+               <p className="text-white text-[10px] font-black uppercase tracking-[0.4em]">Waiting for transmission...</p>
             </div>
           )}
           <div ref={chatEndRef} />
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSend} className="p-6 bg-black/40 border-t border-white/10 backdrop-blur-xl">
+        <form onSubmit={handleSend} className="p-6 bg-black/40 border-t border-white/10">
           <div className="flex gap-3 relative">
             <input 
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               placeholder="Inject message into the network..."
-              className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-6 py-5 text-white text-xs font-bold outline-none focus:border-[#ff007a] transition-all placeholder:text-white/10"
+              className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-6 py-5 text-white text-xs font-bold outline-none focus:border-cyan-400"
             />
-            <button 
-              type="submit" 
-              className="bg-cyan-500 hover:bg-[#ff007a] text-white px-10 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-cyan-500/20 transition-all active:scale-95"
-            >
-              Send Signal
-            </button>
+            <button type="submit" className="bg-cyan-500 hover:bg-[#ff007a] text-white px-10 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all">Send</button>
           </div>
         </form>
       </div>

@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 import Navbar from './components/Navbar'; 
+import Footer from './components/Footer'; // Pehle Footer ko import karein
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -14,12 +15,15 @@ import ResetPassword from './pages/ResetPassword';
 import AIIntelligence from './pages/AIIntelligence'; 
 import Admin from './pages/Admin'; 
 import Chat from './pages/Chat'; 
+import Inbox from './pages/Inbox';
 
 function App() {
   return (
     <Router>
+      {/* min-h-screen footer ko niche rakhne ke liye zaroori hai */}
       <div className="flex flex-col min-h-screen bg-[#0f0c29]">
         <Navbar />
+        
         <main className="grow">
           <Routes>
             <Route path="/" element={<Home />} /> 
@@ -32,17 +36,13 @@ function App() {
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password/:id" element={<ResetPassword />} />
             <Route path="/ai-intelligence" element={<AIIntelligence />} />
-            
-            {/* Admin Dashboard Route */}
             <Route path="/admin" element={<Admin />} /> 
-
-            {/* UPDATED Chat Route: 
-               Now accepts both itemId and receiverId to match the controller logic
-            */}
-            <Route path="/chat/:itemId/:receiverId" element={<Chat />} /> 
-            
+            <Route path="/chat/:itemId/:otherUserId" element={<Chat />} />
+            <Route path="/inbox" element={<Inbox />} />
           </Routes>
         </main>
+
+        <Footer />
       </div>
     </Router>
   );

@@ -10,105 +10,92 @@ const ItemDetails = () => {
   useEffect(() => {
     const fetchItem = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/items/${id}`);
-        const data = await response.json();
-        setItem(data);
+        const res = await fetch(`http://localhost:5000/api/items/details/${id}`);
+        const data = await res.json();
+        if (res.ok) {
+          setItem(data);
+        } else {
+          console.error("Item not found in database");
+        }
         setLoading(false);
       } catch (err) {
-        console.error("Error fetching item:", err);
+        console.error("Connection failed");
         setLoading(false);
       }
     };
     fetchItem();
   }, [id]);
 
-  if (loading) return (
-    <div className="min-h-screen bg-[#0f0c29] flex flex-col justify-center items-center text-white">
-      <div className="w-12 h-12 border-4 border-bright-cyan border-t-transparent rounded-full animate-spin mb-4"></div>
-      <p className="font-black uppercase tracking-widest text-[10px]">Loading Item Intelligence...</p>
-    </div>
-  );
+  if (loading) return <div className="min-h-screen bg-[#0f0c29] flex items-center justify-center text-cyan-400 font-black animate-pulse uppercase">Accessing Database...</div>;
 
   if (!item) return (
-    <div className="min-h-screen bg-[#0f0c29] flex justify-center items-center text-white font-black uppercase tracking-widest">
-      Item not found!
+    <div className="min-h-screen bg-[#0f0c29] flex flex-col items-center justify-center text-white">
+      <h1 className="text-4xl font-black mb-4 uppercase italic text-pink-500">404: Signal Lost</h1>
+      <p className="text-gray-400 mb-8">The requested item does not exist in the network.</p>
+      <button onClick={() => navigate('/discovery')} className="bg-cyan-500 px-8 py-3 rounded-xl font-black uppercase text-xs">Back to Discovery</button>
     </div>
   );
 
   return (
     <div className="min-h-screen bg-[#0f0c29] p-8 flex justify-center items-center">
-      <div className="max-w-6xl w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-[40px] overflow-hidden shadow-2xl flex flex-col md:flex-row">
+      <div className="max-w-6xl w-full bg-[#1a1a4b] rounded-[50px] border-2 border-white/5 overflow-hidden flex flex-col md:flex-row shadow-2xl relative">
         
-        {/* Left Side: Image Section */}
-        <div className="md:w-1/2 h-[400px] md:h-auto relative group">
+        {/* Glow Effect */}
+        <div className="absolute -top-24 -left-24 w-64 h-64 bg-cyan-500/10 blur-[100px] rounded-full"></div>
+        <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-pink-500/10 blur-[100px] rounded-full"></div>
+
+        {/* Image Section */}
+        <div className="md:w-1/2 h-[400px] md:h-auto border-r border-white/5">
           <img 
             src={`http://localhost:5000/uploads/${item.image}`} 
             alt={item.title} 
-            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+            className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500" 
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0f0c29]/80 to-transparent md:hidden"></div>
         </div>
-        
-        {/* Right Side: Details Section */}
-        <div className="md:w-1/2 p-8 md:p-14 flex flex-col justify-center relative">
-          {/* Status Badge */}
-          <span className={`w-fit px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] mb-8 shadow-xl border-2 ${
-            item.type === 'Lost' ? 'bg-neon-pink/20 border-neon-pink text-neon-pink' : 'bg-bright-cyan/20 border-bright-cyan text-bright-cyan'
-          }`}>
-            {item.type} Report
-          </span>
-          
-          <h1 className="text-4xl md:text-6xl font-black text-white uppercase italic mb-4 tracking-tighter leading-none">
+
+        {/* Info Section */}
+        <div className="md:w-1/2 p-12 flex flex-col justify-center relative z-10">
+          <div className="flex items-center justify-between mb-6">
+            <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-tighter ${item.type === 'Lost' ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`}>
+              {item.type} Report
+            </span>
+            <span className="text-white/20 font-black uppercase text-[9px] tracking-widest italic">ID: {item._id.slice(-6)}</span>
+          </div>
+
+          <h1 className="text-5xl font-black text-white uppercase italic mb-2 leading-none tracking-tighter">
             {item.title}
           </h1>
           
-          <div className="flex items-center text-bright-cyan font-black mb-8 uppercase tracking-[0.2em] text-[10px]">
-            <span className="mr-3 text-xl">📍</span> {item.location}, {item.city}
-          </div>
-          
-          {/* Description Box */}
-          <div className="bg-white/5 p-8 rounded-[30px] border border-white/10 mb-8 backdrop-blur-md">
-            <p className="text-gray-300 leading-relaxed font-medium text-sm italic">
-              "{item.description}"
+          {/* Identity Logic: Showing name, keeping phone hidden for privacy */}
+          <div className="flex items-center gap-2 mb-8">
+            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
+            <p className="text-cyan-400 font-black text-[10px] uppercase tracking-[0.2em]">
+              Verified Source: <span className="text-white ml-1">{item.user?.name || "System Member"}</span>
             </p>
           </div>
 
-          {/* Poster Intelligence Section */}
-          <div className="bg-white/5 p-6 rounded-[25px] border-l-4 border-bright-cyan mb-10 flex items-center gap-5">
-            <div className="w-12 h-12 bg-bright-cyan rounded-full flex items-center justify-center font-black text-royal-blue text-xl shadow-neon">
-              {item.user?.name?.charAt(0) || 'U'}
-            </div>
-            <div>
-              <p className="text-[9px] text-gray-500 font-black uppercase tracking-widest mb-1">Reported Intelligence By</p>
-              <p className="text-white font-black uppercase text-sm tracking-wider">{item.user?.name || "Verified Member"}</p>
-            </div>
+          <p className="text-gray-400 font-bold text-xs uppercase mb-8 flex items-center gap-2">
+            <span className="text-pink-500 text-lg">📍</span> {item.location}, {item.city}
+          </p>
+          
+          <div className="bg-white/5 p-8 rounded-[30px] border border-white/10 mb-10 backdrop-blur-sm">
+            <h4 className="text-white/30 font-black uppercase text-[9px] mb-3 tracking-widest italic">Data Logs / Description</h4>
+            <p className="text-gray-300 text-sm leading-relaxed font-medium italic">"{item.description}"</p>
           </div>
 
           {/* Action Buttons */}
-          <div className="grid grid-cols-1 gap-4">
-            
-            {/* UPDATED: Message Seller Button - Passes both Item ID and User ID */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <button 
-              onClick={() => navigate(`/chat/${item._id}/${item.user?._id}`)}
-              className="w-full py-5 bg-neon-pink text-white rounded-2xl font-black uppercase text-xs tracking-[0.3em] text-center shadow-lg hover:bg-[#e6006e] transition-all active:scale-95 flex items-center justify-center gap-2"
+              onClick={() => navigate(-1)} 
+              className="py-5 bg-white/5 border border-white/10 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-white/10 transition-all"
             >
-              Message Seller 💬
+              Back to Portal
             </button>
-
-            {/* BUTTON 2: EMAIL CONTACT */}
-            <a 
-              href={`mailto:${item.user?.email}`}
-              className="w-full py-5 bg-bright-cyan text-royal-blue rounded-2xl font-black uppercase text-xs tracking-[0.3em] text-center shadow-lg hover:bg-white transition-all active:scale-95 block"
-            >
-              Contact via Email ✉️
-            </a>
-
-            {/* BUTTON 3: BACK */}
             <button 
-              onClick={() => navigate('/discovery')}
-              className="w-full py-5 bg-white/5 border-2 border-white/10 text-white rounded-2xl font-black uppercase text-xs tracking-[0.3em] hover:bg-white/10 transition-all"
+              onClick={() => navigate(`/chat/${item._id}/${item.user?._id || item.user}`)}
+              className="py-5 bg-gradient-to-r from-pink-500 to-[#ff007a] text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-[0_10px_30px_rgba(255,0,122,0.3)] hover:scale-[1.02] active:scale-95 transition-all"
             >
-              Back to Network
+              Initiate Chat 🚀
             </button>
           </div>
         </div>

@@ -10,10 +10,6 @@ const Discovery = () => {
   const [filterType, setFilterType] = useState('All');
   const [filterCity, setFilterCity] = useState('All');
   
-  const [showChat, setShowChat] = useState(false);
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [messageText, setMessageText] = useState('');
-
   const { token } = useContext(AuthContext); 
   const navigate = useNavigate();
 
@@ -23,13 +19,8 @@ const Discovery = () => {
     try {
       const response = await fetch('http://localhost:5000/api/items/all-items');
       const data = await response.json();
-      
-      // Sync Logic: Handle both array and object responses
       const allItems = Array.isArray(data) ? data : (data.items || []);
-      
-      // Documentation Logic: Sirf Pending items dikhayein
       const activeItems = allItems.filter(item => item.status === 'Pending');
-      
       setItems(activeItems);
       setFilteredItems(activeItems);
       setLoading(false);
@@ -39,9 +30,7 @@ const Discovery = () => {
     }
   };
 
-  useEffect(() => {
-    fetchItems();
-  }, []);
+  useEffect(() => { fetchItems(); }, []);
 
   useEffect(() => {
     let result = items;
@@ -56,36 +45,6 @@ const Discovery = () => {
     setFilteredItems(result);
   }, [searchTerm, filterType, filterCity, items]);
 
-  const handleSendMessage = async (e) => {
-    if (e) e.preventDefault();
-    if (!messageText.trim() || !selectedItem) return;
-    if (!token) { alert("Please login first!"); return; }
-
-    const receiverId = selectedItem.user?._id || selectedItem.user;
-    try {
-      const response = await fetch('http://localhost:5000/api/messages/send', {
-        method: 'POST',
-        headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}` 
-        },
-        body: JSON.stringify({
-          receiver: receiverId,
-          itemId: selectedItem._id,
-          text: messageText
-        }),
-      });
-
-      if (response.ok) {
-        alert("🚀 Signal Sent!");
-        setMessageText('');
-        setShowChat(false);
-      }
-    } catch (err) {
-      alert("Connection Error!");
-    }
-  };
-
   if (loading) return <div className="min-h-screen bg-[#0f0c29] flex items-center justify-center text-white font-black animate-pulse uppercase tracking-widest">Scanning Network...</div>;
 
   return (
@@ -94,6 +53,7 @@ const Discovery = () => {
         <h1 className="text-5xl font-black text-white uppercase italic mb-4">Discovery <span className="text-pink-500">Portal</span></h1>
       </div>
 
+      {/* Filters */}
       <div className="max-w-7xl mx-auto mb-12 grid grid-cols-1 md:grid-cols-4 gap-4">
         <input type="text" placeholder="SEARCH..." className="bg-white/5 border-2 border-white/10 p-4 rounded-2xl text-white outline-none" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
         <select className="bg-white/5 border-2 border-white/10 p-4 rounded-2xl text-white" value={filterType} onChange={(e) => setFilterType(e.target.value)}>
@@ -110,6 +70,7 @@ const Discovery = () => {
         </div>
       </div>
 
+      {/* Items Grid */}
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
         {filteredItems.map((item) => (
           <div key={item._id} className="bg-[#1a1a4b] border-2 border-white/5 rounded-[40px] overflow-hidden hover:border-pink-500 transition-all">
@@ -122,23 +83,23 @@ const Discovery = () => {
               <p className="text-gray-500 text-[10px] font-bold mb-6 italic">📍 {item.location}, {item.city}</p>
               <div className="grid grid-cols-2 gap-4">
                 <button onClick={() => navigate(`/item/${item._id}`)} className="py-4 bg-white/5 border-2 border-white/10 text-white rounded-2xl font-black uppercase text-[9px]">Details</button>
-                <button onClick={() => { setSelectedItem(item); setShowChat(true); }} className="py-4 bg-pink-500 text-white rounded-2xl font-black uppercase text-[9px]">Chat</button>
+                
+                {/* MODIFIED: Navigates to Chat Page */}
+                <button 
+                  onClick={() => {
+                    const receiverId = item.user?._id || item.user;
+                    if (!token) { alert("Please login to chat!"); return; }
+                    navigate(`/chat/${item._id}/${receiverId}`);
+                  }} 
+                  className="py-4 bg-pink-500 text-white rounded-2xl font-black uppercase text-[9px]"
+                >
+                  Chat
+                </button>
               </div>
             </div>
           </div>
         ))}
       </div>
-
-      {showChat && (
-        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/90 backdrop-blur-md">
-          <div className="bg-[#1a1a4b] w-full max-w-lg rounded-[40px] border-2 border-pink-500 p-8 relative">
-            <button onClick={() => setShowChat(false)} className="absolute top-4 right-6 text-white text-3xl">×</button>
-            <h2 className="text-xl font-black text-white uppercase italic mb-6">Signal to <span className="text-cyan-400">{selectedItem.user?.name || "Member"}</span></h2>
-            <textarea className="w-full h-40 bg-white/5 border-2 border-white/10 rounded-2xl p-4 text-white outline-none mb-6" value={messageText} onChange={(e) => setMessageText(e.target.value)} placeholder="Type your message..."></textarea>
-            <button onClick={handleSendMessage} className="w-full py-4 bg-gradient-to-r from-pink-500 to-cyan-500 text-white rounded-2xl font-black uppercase tracking-widest text-[11px]">Send Signal 🚀</button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

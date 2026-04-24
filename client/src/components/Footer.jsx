@@ -3,14 +3,14 @@ import React from 'react';
 const Footer = () => {
   return (
     <footer className="bg-royal-blue border-t border-neon-pink/20 py-10 mt-auto">
-      <div className="container mx-auto px-10">
+      <div className="container mx-auto px-6 md:px-10">
         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
           
-          {/* Logo & Tagline */}
+          {/* Logo & Tagline - Updated to Returnify */}
           <div className="text-center md:text-left">
-            <h2 className="text-bright-cyan text-xl font-black italic tracking-tighter uppercase">FoundIt</h2>
+            <h2 className="text-bright-cyan text-xl font-black italic tracking-tighter uppercase">Returnify</h2>
             <p className="text-gray-400 text-[10px] font-bold uppercase tracking-[0.2em] mt-1">
-              Smart Recovery Network
+              AI-Powered Recovery Network
             </p>
           </div>
 
@@ -21,17 +21,17 @@ const Footer = () => {
             <span className="hover:text-neon-pink cursor-pointer transition">Support</span>
           </div>
 
-          {/* Copyright */}
+          {/* Copyright - Updated Year and Name */}
           <div className="text-center md:text-right">
             <p className="text-gray-500 text-[9px] font-medium tracking-widest uppercase">
-              &copy; 2025 Returnify Platform. All Rights Reserved.
+              &copy; 2026 Returnify AI Portal. All Rights Reserved.
             </p>
           </div>
 
         </div>
 
         {/* Bottom Accent Line */}
-        <div className="mt-8 h-1 w-full bg-gradient-to-r from-transparent via-neon-pink/30 to-transparent"></div>
+        <div className="mt-8 h-[1px] w-full bg-gradient-to-r from-transparent via-neon-pink/30 to-transparent"></div>
       </div>
     </footer>
   );

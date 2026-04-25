@@ -38,7 +38,7 @@ const Admin = () => {
             });
             if (res.data.success) {
                 alert("SUCCESS: Item Resolved! 🎉");
-                fetchData(); // Documentation Logic: Reload to update matches and stats
+                fetchData();
             }
         } catch (err) { alert("Update Failed"); }
     };
@@ -66,6 +66,7 @@ const Admin = () => {
                 </button>
             </div>
 
+            {/* Stats Grid */}
             <div className="grid grid-cols-4 gap-6 mb-12">
                 {[{ label: 'USERS', val: data?.stats?.users, color: 'text-cyan-400' },
                   { label: 'REPORTS', val: data?.stats?.reports, color: 'text-pink-500' },
@@ -79,13 +80,17 @@ const Admin = () => {
                 ))}
             </div>
 
+            {/* Tabs Navigation */}
             <div className="flex gap-4 mb-8">
                 {['reports', 'user-registry', 'ai-engine', 'community-heroes'].map(tab => (
                     <button key={tab} onClick={() => setActiveTab(tab)} className={`px-8 py-2 rounded-full text-[10px] font-black uppercase transition-all ${activeTab === tab ? 'bg-pink-600 shadow-[0_0_15px_pink]' : 'bg-white/5 text-gray-600 hover:text-white'}`}>{tab.replace('-', ' ')}</button>
                 ))}
             </div>
 
+            {/* Main Content Area */}
             <div className="bg-[#161336] rounded-[40px] p-10 border border-white/5 shadow-2xl min-h-[400px]">
+                
+                {/* Reports Tab */}
                 {activeTab === 'reports' && (
                     <table className="w-full text-left">
                         <thead>
@@ -116,6 +121,7 @@ const Admin = () => {
                     </table>
                 )}
 
+                {/* User Registry Tab */}
                 {activeTab === 'user-registry' && (
                     <div className="grid gap-4">
                         {data?.allUsers?.map(u => (
@@ -127,24 +133,35 @@ const Admin = () => {
                     </div>
                 )}
 
+                {/* AI Engine Tab - UPDATED DYNAMIC UI */}
                 {activeTab === 'ai-engine' && (
                     <div className="grid gap-6">
                         {data?.matches?.length > 0 ? (
                             data.matches.map((m, i) => (
-                                <div key={i} className="bg-white/5 p-10 rounded-[35px] border border-white/5 flex justify-between items-center">
+                                <div key={i} className="bg-white/5 p-10 rounded-[35px] border border-white/5 flex justify-between items-center hover:border-pink-500/50 transition-all">
                                     <div>
-                                        <h3 className="text-2xl font-black italic uppercase text-white">LOST: <span className="text-pink-500">{m.lostItem}</span> ↔ FOUND: <span className="text-cyan-400">{m.foundItem}</span></h3>
-                                        <p className="text-[10px] text-gray-500 uppercase mt-2 font-bold italic tracking-widest italic">Matched By: {m.reporterL} & {m.reporterF}</p>
+                                        <h3 className="text-2xl font-black italic uppercase text-white">
+                                            LOST: <span className="text-pink-500">{m.lostItem}</span> ↔ FOUND: <span className="text-cyan-400">{m.foundItem}</span>
+                                        </h3>
+                                        <p className="text-[10px] text-gray-500 uppercase mt-2 font-bold italic tracking-widest italic">
+                                            Neural Match Detected | Reporters: {m.reporterL} & {m.reporterF}
+                                        </p>
                                     </div>
-                                    <div className="bg-green-500 text-black px-8 py-3 rounded-full text-sm font-black italic">MATCH: 100%</div>
+                                    {/* Yahan matchScore ab dynamic backend value (80%) uthaye ga */}
+                                    <div className="bg-neon-pink text-white px-8 py-3 rounded-full text-sm font-black italic shadow-[0_0_15px_rgba(255,0,128,0.4)]">
+                                        MATCH: {m.matchScore}
+                                    </div>
                                 </div>
                             ))
                         ) : (
-                            <div className="text-center text-gray-500 py-20 font-black italic uppercase">No AI Matches Detected.</div>
+                            <div className="text-center text-gray-500 py-20 font-black italic uppercase border-2 border-dashed border-white/5 rounded-[40px]">
+                                No AI Matches Detected in Neural Network.
+                            </div>
                         )}
                     </div>
                 )}
 
+                {/* Community Heroes Tab */}
                 {activeTab === 'community-heroes' && (
                     <div className="grid gap-6">
                         {data?.heroes?.length > 0 ? (

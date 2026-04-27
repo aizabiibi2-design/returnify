@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react'; // Added useContext
 import axios from 'axios';
+import { AuthContext } from '../context/AuthContext'; // Import your AuthContext
 
 const AIIntelligence = () => {
+  const { token } = useContext(AuthContext); // Get Token
   const [lostItem, setLostItem] = useState({ name: '', location: '', desc: '' });
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -14,6 +16,7 @@ const AIIntelligence = () => {
     setLoading(true);
     setMatches([]);
     try {
+      // Laptop par test karne ke liye localhost hi rehne diya hai
       const dbResponse = await axios.get('http://localhost:5000/api/items/all-items');
       const foundItems = dbResponse.data;
 
@@ -28,14 +31,38 @@ const AIIntelligence = () => {
         setMatches(aiResponse.data.matches);
       }
     } catch (error) {
-      console.error("AI CONNECTION ERROR:", error);
       alert("AI OFFLINE: Make sure Flask (5001) is running! 🔌");
     }
     setLoading(false);
   };
 
-  const handleClaim = () => {
-    alert("CLAIM LOGGED: Our AI has notified the founder. Please check your messages! ✉️");
+  // REAL CLAIM LOGIC - Updated ONLY the data object for validation
+  const handleClaim = async (item) => {
+    try {
+      // Check karein ke item owner ka data populate ho raha hai
+      if (!item.user || !item.user.email) {
+        alert("Wait: Owner data is missing. Make sure your backend uses .populate('user')");
+        return;
+      }
+
+      const response = await axios.post('http://localhost:5000/api/items/claim', 
+        { 
+          itemId: item.item_id || item._id, // Validation fix: uses item_id from AI engine
+          ownerId: item.user._id,      
+          ownerEmail: item.user.email,  
+          itemName: item.title,
+          message: `Match notification for ${item.title}` // Validation fix: sends required 'message' field
+        }, 
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        alert(`CLAIM LOGGED: Our AI has notified the founder via Email & Inbox! ✉️`);
+      }
+    } catch (error) {
+      console.error("Claim Error:", error.response?.data);
+      alert(error.response?.data?.message || "Failed to log claim");
+    }
   };
 
   return (
@@ -68,7 +95,10 @@ const AIIntelligence = () => {
               </div>
               <h3 className="text-xl font-black text-white uppercase italic mb-2">{item.title}</h3>
               <p className="text-[10px] text-bright-cyan font-bold uppercase mb-4 italic">Found @ {item.location}</p>
-              <button onClick={handleClaim} className="w-full py-4 bg-white/5 border border-white/10 text-white rounded-xl text-[10px] font-black uppercase hover:bg-white hover:text-royal-blue transition-all">Claim Intelligence</button>
+              
+              <button onClick={() => handleClaim(item)} className="w-full py-4 bg-white/5 border border-white/10 text-white rounded-xl text-[10px] font-black uppercase hover:bg-white hover:text-royal-blue transition-all">
+                Claim Intelligence
+              </button>
             </div>
           ) ) : !loading && <div className="col-span-full text-center py-10 text-gray-600 font-black uppercase tracking-widest border-2 border-dashed border-white/5 rounded-[40px]">No High-Frequency Matches Detected</div>}
         </div>

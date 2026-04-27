@@ -49,11 +49,13 @@ def match_items():
             # Documentation Requirement: Match percentage display karna
             if score > 0.15: 
                 matches.append({
-                    "item_id": found_items[i].get('_id', ''),
+                    # Yahan tabdeeli ki hai: str() add kiya hai taake crash na ho
+                    "item_id": str(found_items[i].get('_id', '')),
                     "score": round(float(score), 2),
                     "title": found_items[i].get('title', 'Unknown Item'),
                     "location": found_items[i].get('location', 'N/A'),
-                    "city": found_items[i].get('city', 'N/A')
+                    "city": found_items[i].get('city', 'N/A'),
+                    "user": found_items[i].get('user', {}) # User data pass karna claim ke liye zaroori hai
                 })
 
         # Score ke mutabiq sort karna (Highest match pehle)
@@ -72,4 +74,3 @@ def match_items():
 if __name__ == '__main__':
     print("🚀 Returnify AI Engine is active on Port 5001...")
     app.run(port=5001, debug=True)
-

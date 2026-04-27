@@ -19,7 +19,7 @@ const Login = () => {
       // Clean data before sending
       const cleanEmail = email.trim().toLowerCase();
 
-      const response = await axios.post('http://localhost:5000/api/auth/login', { 
+      const response = await axios.post('http://192.168.0.112:5000/api/auth/login', { 
         email: cleanEmail, 
         password 
       });

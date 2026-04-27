@@ -1,5 +1,7 @@
 const ItemModel = require("../models/Item");
 const User = require("../models/User");
+const nodemailer = require("nodemailer"); 
+const MessageModel = require("../models/message"); 
 
 // 1. Post an Item
 const postItem = async (req, res) => {
@@ -19,7 +21,7 @@ const postItem = async (req, res) => {
 // 2. Get All Items
 const getAllItems = async (req, res) => {
   try {
-    const items = await ItemModel.find({ status: "Pending" }).populate('user', 'name').sort({ createdAt: -1 });
+    const items = await ItemModel.find({ status: "Pending" }).populate('user', 'name email').sort({ createdAt: -1 });
     res.status(200).json(items);
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -37,84 +39,114 @@ const getItemById = async (req, res) => {
   }
 };
 
-// 4. Admin Dashboard (DYNAMIC SCORE LOGIC)
+// 4. Admin Dashboard
 const getAdminDashboard = async (req, res) => {
   try {
     const allPosts = await ItemModel.find().populate('user', 'name email').sort({ createdAt: -1 });
     const allUsers = await User.find().select('-password');
     const heroes = await User.find({ points: { $gt: 0 } }).sort({ points: -1 });
 
-    const lostItems = allPosts.filter(i => i.type.toLowerCase() === 'lost' && i.status === 'Pending');
-    const foundItems = allPosts.filter(i => i.type.toLowerCase() === 'found' && i.status === 'Pending');
-
-    const matches = [];
-    lostItems.forEach(l => {
-      foundItems.forEach(f => {
-        const lWords = l.title.toLowerCase().split(/\s+/);
-        const fWords = f.title.toLowerCase().split(/\s+/);
-        const commonWords = lWords.filter(word => word.length > 3 && fWords.includes(word));
-        
-        if (commonWords.length > 0) {
-            let calculatedScore = l.title.toLowerCase() === f.title.toLowerCase() ? 100 : 80;
-            if(l.title.toLowerCase().includes("airpods")) {
-                calculatedScore = 80; 
-            }
-
-          matches.push({
-            lostItem: l.title,
-            foundItem: f.title,
-            reporterL: l.user?.name || "Member",
-            reporterF: f.user?.name || "Member",
-            matchScore: `${calculatedScore}%`
-          });
-        }
-      });
-    });
-
     res.status(200).json({
       success: true,
       stats: { 
-        users: allUsers.length, reports: allPosts.length, 
+        users: allUsers.length, 
+        reports: allPosts.length,
         lost: allPosts.filter(i => i.type.toLowerCase() === 'lost').length, 
         found: allPosts.filter(i => i.type.toLowerCase() === 'found').length 
       },
-      allPosts, allUsers, matches, heroes 
+      allPosts, 
+      allUsers, 
+      heroes 
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// 5. Resolve Item (FIXED WITH BETTER RESPONSE)
+// 5. CLAIM ITEM - THE UNIVERSAL FIX (Updated with your direct password)
+const claimItem = async (req, res) => {
+  try {
+    const { itemId, ownerEmail, itemName, ownerId, message } = req.body;
+    const senderId = req.user._id;
+
+    const claimMessage = message || `System Alert: A potential match has been claimed for your item "${itemName}".`;
+
+    // A. Inbox Entry (Validation Fix)
+    await MessageModel.create({
+      sender: senderId,
+      receiver: ownerId,
+      message: claimMessage,
+      text: claimMessage, 
+      item: itemId,
+      itemId: itemId 
+    });
+
+    // B. Email Notification (DIRECT CREDENTIALS)
+    const transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true, 
+      auth: {
+        user: "aizabibi18@gmail.com",
+        pass: "xjdodspszvcytoma" 
+      },
+      tls: {
+        rejectUnauthorized: false
+      }
+    });
+
+    const mailOptions = {
+      from: `"Returnify AI" <aizabibi18@gmail.com>`,
+      to: ownerEmail,
+      subject: 'Returnify - Someone Found Your Item! 🚀',
+      html: `
+        <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 12px;">
+          <h2 style="color: #1a1a4b;">Returnify Notification</h2>
+          <p>Good news! Someone has claimed a match for your item: <strong>${itemName}</strong>.</p>
+          <p>Login to your <strong>Returnify Inbox</strong> to chat with the finder.</p>
+          <hr>
+          <p style="font-size: 11px; color: #777;">This is an automated system-generated alert.</p>
+        </div>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.status(200).json({ 
+      success: true, 
+      message: "Success! Notification sent to Owner's Inbox and Email." 
+    });
+
+  } catch (error) {
+    console.error("Backend Claim Error:", error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// 6. Resolve Item
 const resolveItem = async (req, res) => {
   try {
     const item = await ItemModel.findById(req.params.id);
     if (!item) return res.status(404).json({ success: false, message: "Item not found" });
-
     item.status = 'Resolved';
     await item.save();
-
-    // Points award logic
     if (item.user) {
       await User.findByIdAndUpdate(item.user, { $inc: { points: 10 } });
     }
-
-    res.status(200).json({ success: true, message: "Resolved and points awarded!" });
+    res.status(200).json({ success: true, message: "Resolved!" });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// 6. Delete Item (FIXED WITH BETTER RESPONSE)
+// 7. Delete Item
 const deleteItem = async (req, res) => {
   try {
-    const deletedItem = await ItemModel.findByIdAndDelete(req.params.id);
-    if (!deletedItem) return res.status(404).json({ success: false, message: "Item not found" });
-    
+    await ItemModel.findByIdAndDelete(req.params.id);
     res.status(200).json({ success: true, message: "Deleted Successfully" });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-module.exports = { postItem, getAllItems, getItemById, getAdminDashboard, resolveItem, deleteItem };
+module.exports = { postItem, getAllItems, getItemById, getAdminDashboard, resolveItem, deleteItem, claimItem };

@@ -20,6 +20,10 @@ router.get('/all-items', itemController.getAllItems);
 // URL: http://localhost:5000/api/items/admin/dashboard
 router.get('/admin/dashboard', protect, itemController.getAdminDashboard);
 
+// --- NEW ROUTE FOR LEADERBOARD (As per documentation) ---
+// URL: http://localhost:5000/api/items/actions/leaderboard/top
+router.get('/actions/leaderboard/top', itemController.getTopHeroes);
+
 // 3. POST ITEM (Image Upload Fix)
 // Frontend URL: http://localhost:5000/api/items/post
 router.post('/post', protect, upload.single('image'), itemController.postItem);
@@ -30,8 +34,10 @@ router.get('/details/:id', itemController.getItemById);
 // 5. CLAIM ROUTE (AI Match Fix)
 router.post('/claim', protect, itemController.claimItem);
 
+
 // 6. ADMIN ACTIONS (Resolve & Delete)
 router.put('/admin/resolve/:id', protect, itemController.resolveItem);
 router.delete('/:id', protect, itemController.deleteItem);
+
 
 module.exports = router;

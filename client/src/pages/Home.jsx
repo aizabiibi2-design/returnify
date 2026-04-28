@@ -24,7 +24,7 @@ const Home = () => {
           </Link>
         </div>
 
-        {/* --- NAYA AI BUTTON YAHAN HAI --- */}
+        
         <div className="mt-12">
           <Link to="/ai-intelligence" className="group relative inline-flex items-center justify-center px-8 py-3 font-black text-white uppercase italic tracking-widest transition-all duration-300">
             <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-neon-pink to-bright-cyan rounded-full blur-md opacity-50 group-hover:opacity-100 transition-opacity"></span>
@@ -39,7 +39,7 @@ const Home = () => {
       <section className="py-20 px-10 max-w-6xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10 text-center">
           <div className="p-8 rounded-3xl bg-gray-50 border-b-4 border-royal-blue hover:shadow-xl transition-all">
-            <h3 className="text-4xl font-black text-royal-blue mb-2">500+</h3>
+            <h3 className="text-4xl font-black text-royal-blue mb-2">Many</h3>
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Items Reported</p>
           </div>
           

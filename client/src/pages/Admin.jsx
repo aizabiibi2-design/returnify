@@ -6,7 +6,7 @@ const Admin = () => {
         stats: { users: 0, reports: 0, lost: 0, found: 0 }, 
         allPosts: [], 
         allUsers: [], 
-        matches: [],
+        aiMatches: [], 
         heroes: []
     }); 
     const [activeTab, setActiveTab] = useState('reports');
@@ -62,7 +62,7 @@ const Admin = () => {
             <div className="flex justify-between items-center mb-12">
                 <h1 className="text-4xl font-black italic uppercase bg-gradient-to-r from-pink-500 to-cyan-400 bg-clip-text text-transparent">RETURNIFY CONTROL</h1>
                 <button onClick={() => setActiveTab('ai-engine')} className="bg-white text-black px-6 py-2 rounded-xl font-black text-[10px] uppercase hover:bg-cyan-400 transition-all">
-                    <span>⚡</span> RUN AI MATCHER ({data?.matches?.length || 0})
+                    <span>⚡</span> RUN AI MATCHER ({data?.aiMatches?.length || 0})
                 </button>
             </div>
 
@@ -87,7 +87,6 @@ const Admin = () => {
                 ))}
             </div>
 
-            {/* Main Content Area */}
             <div className="bg-[#161336] rounded-[40px] p-10 border border-white/5 shadow-2xl min-h-[400px]">
                 
                 {/* Reports Tab */}
@@ -121,34 +120,21 @@ const Admin = () => {
                     </table>
                 )}
 
-                {/* User Registry Tab */}
-                {activeTab === 'user-registry' && (
-                    <div className="grid gap-4">
-                        {data?.allUsers?.map(u => (
-                            <div key={u._id} className="bg-white/5 p-6 rounded-[25px] border border-white/5 flex justify-between items-center">
-                                <span className="font-black italic uppercase text-cyan-400 text-lg">{u.name || "USER"}</span>
-                                <span className="text-gray-500 text-[10px] font-bold uppercase">{u.email}</span>
-                            </div>
-                        ))}
-                    </div>
-                )}
-
-                {/* AI Engine Tab - UPDATED DYNAMIC UI */}
+                {/* AI Engine Tab */}
                 {activeTab === 'ai-engine' && (
                     <div className="grid gap-6">
-                        {data?.matches?.length > 0 ? (
-                            data.matches.map((m, i) => (
+                        {data?.aiMatches?.length > 0 ? (
+                            data.aiMatches.map((m, i) => (
                                 <div key={i} className="bg-white/5 p-10 rounded-[35px] border border-white/5 flex justify-between items-center hover:border-pink-500/50 transition-all">
                                     <div>
                                         <h3 className="text-2xl font-black italic uppercase text-white">
-                                            LOST: <span className="text-pink-500">{m.lostItem}</span> ↔ FOUND: <span className="text-cyan-400">{m.foundItem}</span>
+                                            LOST: <span className="text-pink-500">{m.lostItem.title}</span> ↔ FOUND: <span className="text-cyan-400">{m.foundItem.title}</span>
                                         </h3>
-                                        <p className="text-[10px] text-gray-500 uppercase mt-2 font-bold italic tracking-widest italic">
-                                            Neural Match Detected | Reporters: {m.reporterL} & {m.reporterF}
+                                        <p className="text-[10px] text-gray-500 uppercase mt-2 font-bold italic tracking-widest">
+                                            Neural Match Detected | City: {m.lostItem.city} | Detect Time: {new Date(m.detectedAt).toLocaleTimeString()}
                                         </p>
                                     </div>
-                                    {/* Yahan matchScore ab dynamic backend value (80%) uthaye ga */}
-                                    <div className="bg-neon-pink text-white px-8 py-3 rounded-full text-sm font-black italic shadow-[0_0_15px_rgba(255,0,128,0.4)]">
+                                    <div className="bg-pink-600 text-white px-8 py-3 rounded-full text-sm font-black italic shadow-[0_0_15px_rgba(255,0,128,0.4)]">
                                         MATCH: {m.matchScore}
                                     </div>
                                 </div>
@@ -161,24 +147,43 @@ const Admin = () => {
                     </div>
                 )}
 
-                {/* Community Heroes Tab */}
+                {/* User Registry Tab */}
+                {activeTab === 'user-registry' && (
+                    <div className="grid gap-4">
+                        {data?.allUsers?.map(u => (
+                            <div key={u._id} className="bg-white/5 p-6 rounded-[25px] border border-white/5 flex justify-between items-center">
+                                <span className="font-black italic uppercase text-cyan-400 text-lg">{u.name || "USER"}</span>
+                                <span className="text-gray-500 text-[10px] font-bold uppercase">{u.email}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+                
+                {/* Community Heroes Tab - FIXED & COMPLETED */}
                 {activeTab === 'community-heroes' && (
-                    <div className="grid gap-6">
+                    <div className="grid gap-4">
                         {data?.heroes?.length > 0 ? (
-                            data.heroes.map((h, i) => (
-                                <div key={i} className="bg-white/5 p-8 rounded-[35px] border border-white/5 flex justify-between items-center">
-                                    <div>
-                                        <h3 className="text-xl font-black italic uppercase text-cyan-400">{h.name}</h3>
-                                        <p className="text-[10px] text-gray-500 font-bold uppercase">{h.email}</p>
+                            data.heroes.map((hero, index) => (
+                                <div key={hero._id || index} className="bg-white/5 p-6 rounded-[25px] border border-white/5 flex justify-between items-center hover:border-cyan-400/30 transition-all">
+                                    <div className="flex items-center gap-4">
+                                        <span className="text-2xl font-black italic text-pink-500">#{index + 1}</span>
+                                        <div>
+                                            <h3 className="font-black italic uppercase text-white text-lg">
+                                                {hero.name} {hero.role === 'admin' && <span className="text-[8px] bg-red-500 px-2 py-1 rounded ml-2">ADMIN</span>}
+                                            </h3>
+                                            <p className="text-gray-500 text-[10px] font-bold uppercase">{hero.email}</p>
+                                        </div>
                                     </div>
                                     <div className="text-right">
-                                        <span className="text-2xl font-black text-pink-500">{h.points}</span>
-                                        <p className="text-[9px] text-white/30 uppercase font-black italic">Return Points</p>
+                                        <p className="text-[10px] text-gray-500 uppercase font-black">Score</p>
+                                        <span className="text-3xl font-black text-cyan-400">{hero.points || 0}</span>
                                     </div>
                                 </div>
                             ))
                         ) : (
-                            <div className="text-center text-gray-500 py-20 font-black italic uppercase">No Heroes identified in this cycle yet.</div>
+                            <div className="text-center text-gray-500 py-20 font-black italic uppercase border-2 border-dashed border-white/5 rounded-[40px]">
+                                No Heroes Found in Database.
+                            </div>
                         )}
                     </div>
                 )}

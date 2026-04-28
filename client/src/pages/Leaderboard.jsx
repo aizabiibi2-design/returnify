@@ -8,7 +8,7 @@ const Leaderboard = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/actions/leaderboard/top');
+        const response = await fetch('http://localhost:5000/api/items/actions/leaderboard/top');
         const data = await response.json();
         
         // FIX: Check if success is true and topUsers is an array

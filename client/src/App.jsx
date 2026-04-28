@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react'; // useEffect add kiya
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 import Navbar from './components/Navbar'; 
-import Footer from './components/Footer'; // Pehle Footer ko import karein
+import Footer from './components/Footer'; 
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -18,9 +18,20 @@ import Chat from './pages/Chat';
 import Inbox from './pages/Inbox';
 
 function App() {
+
+  // PWA Service Worker Registration logic
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => console.log('PWA: Service Worker Registered ✅', reg))
+          .catch(err => console.log('PWA: Service Worker Failed ❌', err));
+      });
+    }
+  }, []);
+
   return (
     <Router>
-      {/* min-h-screen footer ko niche rakhne ke liye zaroori hai */}
       <div className="flex flex-col min-h-screen bg-[#0f0c29]">
         <Navbar />
         

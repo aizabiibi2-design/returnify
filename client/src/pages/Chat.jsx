@@ -18,20 +18,20 @@ const Chat = () => {
   };
 
   const fetchChatData = async () => {
-    // Agar credentials hi nahi hain toh agay mat barhein
     if (!token || !itemId || !otherUserId) return;
     
     try {
-      // 1. Fetch Item Details
       const itemRes = await fetch(`http://localhost:5000/api/items/details/${itemId}`);
       if (itemRes.ok) {
         const itemData = await itemRes.json();
         setItemDetails(itemData);
       }
 
-      // 2. Fetch Chat History
       const msgRes = await fetch(`http://localhost:5000/api/messages/history/${itemId}/${otherUserId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        }
       });
       
       if (msgRes.ok) {
@@ -39,33 +39,25 @@ const Chat = () => {
         setMessages(msgData);
       }
     } catch (err) {
-      console.error("Connection error in signal hub");
+      console.error("Fetch Error:", err);
     } finally {
-      // Har haal mein loading screen hatayein
       setLoading(false); 
     }
   };
 
   useEffect(() => {
     if (!token) {
-      navigate('/login');
-      return;
+      const storedToken = localStorage.getItem('token');
+      if (!storedToken) {
+        navigate('/login');
+        return;
+      }
     }
 
     fetchChatData();
+    const interval = setInterval(fetchChatData, 3000);
 
-    // FORCE STOP LOADING: Agar network slow ho tab bhi 5s baad screen dikhaye
-    const timeout = setTimeout(() => setLoading(false), 5000);
-
-    // AUTO-POLLING: 3 seconds interval for real-time messages
-    const interval = setInterval(() => {
-      fetchChatData();
-    }, 3000);
-
-    return () => {
-      clearInterval(interval);
-      clearTimeout(timeout);
-    };
+    return () => clearInterval(interval);
   }, [itemId, otherUserId, token, navigate]);
 
   useEffect(() => {
@@ -74,9 +66,9 @@ const Chat = () => {
 
   const handleSend = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || !token) return;
 
-    const tempMessage = newMessage;
+    const messageText = newMessage;
     setNewMessage(""); 
 
     try {
@@ -89,95 +81,105 @@ const Chat = () => {
         body: JSON.stringify({
           receiver: otherUserId,
           itemId: itemId,
-          text: tempMessage
+          text: messageText
         })
       });
 
       if (res.ok) {
-        fetchChatData(); 
+        await fetchChatData(); 
       } else {
-        setNewMessage(tempMessage);
-        alert("Transmission failed!");
+        setNewMessage(messageText);
       }
     } catch (err) {
-      setNewMessage(tempMessage);
-      alert("Network Error: Signal lost.");
+      setNewMessage(messageText);
     }
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-[#0f0c29] flex flex-col items-center justify-center space-y-6">
-      <div className="relative w-20 h-20">
-        <div className="absolute inset-0 border-4 border-cyan-400/20 rounded-full"></div>
-        <div className="absolute inset-0 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
-      </div>
-      <div className="text-center">
-        <div className="text-cyan-400 font-black italic animate-pulse uppercase tracking-[0.3em] text-xs">
-          Syncing Signals...
-        </div>
-        <p className="text-white/20 text-[10px] mt-2 font-bold uppercase tracking-widest">Establishing Secure Connection</p>
-      </div>
+    <div className="fixed inset-0 bg-[#0f0c29] flex items-center justify-center z-50">
+      <div className="text-cyan-400 font-black animate-pulse text-[10px] tracking-[0.5em]">INITIALIZING SIGNAL...</div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-[#0f0c29] flex flex-col items-center p-6 font-sans">
-      <div className="w-full max-w-3xl bg-[#1a1a4b] rounded-[40px] border-2 border-cyan-400 overflow-hidden flex flex-col h-[85vh] shadow-[0_0_50px_rgba(0,212,255,0.15)]">
+    <div className="fixed inset-0 bg-[#0f0c29] flex flex-col items-center justify-start p-4 md:p-8 font-sans overflow-hidden">
         
-        {/* Header */}
-        <div className="p-6 bg-white/5 border-b border-white/10 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-tr from-[#ff007a] to-cyan-400 rounded-2xl flex items-center justify-center text-white font-black uppercase text-xl shadow-[0_0_15px_rgba(255,0,122,0.4)]">
-              {itemDetails?.title ? itemDetails.title.charAt(0) : "?"}
-            </div>
-            <div>
-              <h1 className="text-white font-black uppercase italic tracking-tighter text-lg leading-none">Signal Hub</h1>
-              <p className="text-cyan-400 text-[9px] font-bold uppercase tracking-widest mt-1 italic">
-                Talking about: {itemDetails?.title || "Checking Transmission..."}
-              </p>
-            </div>
-          </div>
-          <button onClick={() => navigate(-1)} className="text-white/30 hover:text-white font-black uppercase text-[10px] tracking-widest transition-all">✕ Close</button>
-        </div>
-
-        {/* Chat Bubbles */}
-        <div className="flex-1 overflow-y-auto p-8 space-y-6">
-          {messages.length > 0 ? messages.map((msg, i) => {
-            const isMe = (msg.sender?._id || msg.sender) === (user?._id || user);
-            return (
-              <div key={i} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[70%] p-5 rounded-3xl text-[13px] font-bold shadow-xl leading-relaxed ${
-                  isMe 
-                  ? 'bg-gradient-to-br from-[#ff007a] to-[#b00055] text-white rounded-tr-none' 
-                  : 'bg-white/10 text-cyan-100 rounded-tl-none border border-white/5'
-                }`}>
-                  {msg.text}
+        {/* Main Interface Container */}
+        <div className="w-full max-w-4xl bg-[#1a1a4b]/80 backdrop-blur-xl rounded-[40px] border-2 border-cyan-400/50 flex flex-col h-full max-h-[85vh] shadow-[0_0_80px_rgba(0,212,255,0.15)] relative mt-8">
+            
+            {/* Cyber Header */}
+            <div className="p-6 bg-white/5 border-b border-white/10 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-gradient-to-tr from-[#ff007a] to-cyan-400 rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-[0_0_20px_rgba(255,0,122,0.3)]">
+                  {itemDetails?.title ? itemDetails.title.charAt(0) : "S"}
+                </div>
+                <div>
+                  <h1 className="text-white font-black uppercase italic tracking-tighter text-lg leading-none">Signal Hub</h1>
+                  <p className="text-cyan-400 text-[9px] font-bold uppercase tracking-widest mt-1 opacity-80">Connected: {itemDetails?.title || "Data Stream"}</p>
                 </div>
               </div>
-            );
-          }) : (
-            <div className="h-full flex flex-col items-center justify-center opacity-20 italic">
-               <p className="text-white text-[10px] font-black uppercase tracking-[0.4em]">Waiting for transmission...</p>
+              <button 
+                onClick={() => navigate(-1)} 
+                className="text-white/40 hover:text-[#ff007a] font-black uppercase text-[10px] tracking-widest transition-all hover:scale-110"
+              >
+                ✕ Close
+              </button>
             </div>
-          )}
-          <div ref={chatEndRef} />
-        </div>
+            
+            {/* Encryption/Messages Body */}
+            <div className="flex-1 overflow-y-auto p-8 space-y-8 scroll-smooth">
+                {messages.length > 0 ? messages.map((msg, i) => {
+                    const senderId = msg.sender?._id || msg.sender;
+                    const currentUserId = user?._id || user;
+                    const isMe = String(senderId) === String(currentUserId);
+                    const senderName = msg.sender?.name || "User";
 
-        {/* Form */}
-        <form onSubmit={handleSend} className="p-6 bg-black/40 border-t border-white/10">
-          <div className="flex gap-3 relative">
-            <input 
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Inject message into the network..."
-              className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-6 py-5 text-white text-xs font-bold outline-none focus:border-cyan-400 placeholder:text-white/20 transition-all"
-            />
-            <button type="submit" className="bg-cyan-500 hover:bg-[#ff007a] text-white px-10 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all active:scale-95 shadow-[0_0_20px_rgba(0,212,255,0.2)]">
-              Send
-            </button>
-          </div>
-        </form>
-      </div>
+                    return (
+                        <div key={i} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} animate-in fade-in slide-in-from-bottom-2`}>
+                            {/* Simple Label: No Brackets */}
+                            <span className={`text-[8px] font-black uppercase tracking-[0.3em] mb-2 px-1 ${isMe ? 'text-pink-400' : 'text-cyan-400'}`}>
+                                {isMe ? `YOU` : senderName}
+                            </span>
+
+                            <div className={`max-w-[75%] p-5 rounded-3xl text-[13px] font-bold shadow-xl leading-relaxed ${
+                                isMe 
+                                ? 'bg-gradient-to-br from-[#ff007a] to-[#b00055] text-white rounded-tr-none' 
+                                : 'bg-[#12123d] text-cyan-100 rounded-tl-none border border-cyan-400/20'
+                            }`}>
+                                {msg.text}
+                                <div className={`text-[7px] mt-2 opacity-30 font-mono ${isMe ? 'text-right' : 'text-left'}`}>
+                                    {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                            </div>
+                        </div>
+                    );
+                }) : (
+                    <div className="h-full flex flex-col items-center justify-center opacity-20">
+                        <div className="w-12 h-1 bg-cyan-400 mb-4 animate-pulse"></div>
+                        <p className="text-white text-[10px] font-black uppercase tracking-[0.5em]">Awaiting Signals...</p>
+                    </div>
+                )}
+                <div ref={chatEndRef} />
+            </div>
+
+            {/* Neural Input Area */}
+            <form onSubmit={handleSend} className="p-6 bg-black/40 border-t border-white/10 shrink-0">
+                <div className="flex gap-4">
+                    <input 
+                      value={newMessage} 
+                      onChange={(e) => setNewMessage(e.target.value)} 
+                      placeholder="Enter signal text..."
+                      className="flex-1 bg-[#0f0c29] border border-white/10 rounded-2xl px-6 py-4 text-white text-xs font-bold outline-none focus:border-[#ff007a] transition-all placeholder:opacity-20" 
+                    />
+                    <button 
+                      type="submit" 
+                      className="bg-cyan-500 hover:bg-[#ff007a] text-white px-10 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-[0_0_20px_rgba(0,212,255,0.2)] active:scale-95"
+                    >
+                        Send
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
   );
 };
